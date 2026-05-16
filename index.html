@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Foren Clue API - India's premier forensic science edtech platform. Master forensic analysis, cybersecurity, and investigations." />
+    <meta name="theme-color" content="#111111" />
+    <title>Foren Clue | Forensic EdTech Mastery</title>
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem('theme');
+          if (savedTheme === 'light') {
+            document.documentElement.classList.add('light');
+          }
+        } catch (e) { }
+      })();
+    </script>
+    <!-- Razorpay Checkout Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

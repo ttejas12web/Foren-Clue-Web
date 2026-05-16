@@ -1,0 +1,111 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- PHASE 3: Primitives ---
+    function isSignedIn() { return request.auth != null; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Validation Blueprints
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt'])
+        && data.uid is string && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 256;
+    }
+
+    function isValidDoubt(data) {
+      return data.keys().hasAll(['id', 'title', 'content', 'authorId', 'authorName', 'createdAt'])
+        && data.title is string && data.title.size() <= 200
+        && data.content is string && data.content.size() <= 5000
+        && (!data.keys().hasAny(['imageUrl']) || (data.imageUrl is string && data.imageUrl.size() <= 1000))
+        && (!data.keys().hasAny(['category']) || (data.category is string && data.category.size() <= 100))
+        && (!data.keys().hasAny(['likes']) || (data.likes is list && data.likes.size() <= 5000 && (data.likes.size() == 0 || data.likes[0] is string)))
+        && (!data.keys().hasAny(['resolved']) || data.resolved is bool);
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['id', 'content', 'authorId', 'authorName', 'createdAt'])
+        && data.content is string && data.content.size() <= 1000
+        && data.authorId == request.auth.uid;
+    }
+
+    function isValidReport(data) {
+      return data.keys().hasAll(['id', 'targetId', 'targetType', 'reporterId', 'createdAt'])
+        && data.targetType in ['doubt', 'comment']
+        && data.reporterId == request.auth.uid
+        && (data.createdAt == request.time)
+        && (!data.keys().hasAny(['reason']) || (data.reason is string && data.reason.size() <= 500));
+    }
+
+    function isValidCourseStat(data) {
+      return data.keys().hasAll(['students', 'updatedAt'])
+        && data.students is number;
+    }
+
+    // --- User Profiles ---
+    match /users/{userId} {
+      // Allow public get so profile details can be seen in community links
+      allow get: if true;
+      allow list: if isSignedIn(); 
+      
+      allow create: if isOwner(userId) && isValidUser(incoming()) && incoming().uid == request.auth.uid;
+      allow update: if isOwner(userId) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'mobileNumber', 'universityName', 'studyingYear', 'educationLevel', 'achievementTags', 'progress', 'bookmarks', 'lessonBookmarks', 'quizScores', 'wishlist', 'purchasedCourses', 'doubtsCount', 'commentsCount', 'updatedAt'])
+      );
+    }
+
+    // --- Reports ---
+    match /reports/{reportId} {
+      allow create: if isSignedIn() && isValidId(reportId) && isValidReport(incoming()) && incoming().id == reportId;
+      // Reports are typically only readable by admins, but for now we'll keep it private
+      allow read: if false; 
+    }
+
+    // --- Course Stats ---
+    match /courseStats/{courseId} {
+      // Anyone can read course stats
+      allow read: if true;
+      // Allow increment from client
+      allow write: if isSignedIn() && (
+        !exists(/databases/$(database)/documents/courseStats/$(courseId)) ? 
+          isValidCourseStat(incoming()) : 
+          incoming().diff(existing()).affectedKeys().hasOnly(['students', 'updatedAt'])
+      );
+    }
+
+    // --- Community Doubts ---
+    match /doubts/{doubtId} {
+      // Allow anyone (even unauthenticated) to view doubts
+      allow get: if true;
+      allow list: if true; 
+
+      allow create: if isSignedIn() && isValidId(doubtId) && isValidDoubt(incoming()) && incoming().id == doubtId && incoming().authorId == request.auth.uid;
+      allow update: if isSignedIn() && isValidDoubt(incoming()) && incoming().authorId == existing().authorId && (
+        // Action: Like (any signed-in user)
+        (incoming().diff(existing()).affectedKeys().hasOnly(['likes'])) ||
+        // Action: Resolve (owner only)
+        (existing().authorId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['resolved', 'updatedAt'])) ||
+        // Action: Edit (owner only)
+        (existing().authorId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'category', 'imageUrl', 'updatedAt']))
+      );
+      allow delete: if isSignedIn() && existing().authorId == request.auth.uid;
+
+      // Nested Comments
+      match /comments/{commentId} {
+        allow get: if true;
+        allow list: if true;
+
+        allow create: if isSignedIn() && isValidId(commentId) && isValidComment(incoming()) && incoming().id == commentId;
+        allow update, delete: if isSignedIn() && existing().authorId == request.auth.uid;
+      }
+    }
+  }
+}

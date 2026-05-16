@@ -1,0 +1,108 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account, progress, and community data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "mobileNumber": { "type": "string" },
+        "universityName": { "type": "string" },
+        "studyingYear": { "type": "string" },
+        "educationLevel": { "type": "string" },
+        "achievementTags": { "type": "array", "items": { "type": "string" } },
+        "purchasedCourses": { "type": "array", "items": { "type": "integer" } },
+        "bookmarks": { "type": "array", "items": { "type": "integer" } },
+        "lessonBookmarks": { "type": "object" },
+        "wishlist": { "type": "array", "items": { "type": "integer" } },
+        "doubtsCount": { "type": "integer" },
+        "commentsCount": { "type": "integer" },
+        "progress": { "type": "object" },
+        "quizScores": { "type": "object" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "Doubt": {
+      "title": "Community Doubt",
+      "description": "A user-posted forensic question or observation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "category": { "type": "string", "enum": ["General", "DNA Analysis", "Fingerprinting", "Digital Forensics", "Ballistics", "Crime Scene Investigation", "Toxicology"] },
+        "likes": { "type": "array", "items": { "type": "string" } },
+        "resolved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "content", "authorId", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "A reply to a community doubt",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "content": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "content", "authorId", "createdAt"]
+    },
+    "Report": {
+      "title": "Incident Report",
+      "description": "A report filed against harmful content",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["doubt", "comment"] },
+        "reporterId": { "type": "string" },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "targetId", "targetType", "reporterId", "createdAt"]
+    },
+    "CourseStat": {
+      "title": "Course Stat",
+      "description": "Stores dynamic statistics for courses such as enrolled students",
+      "type": "object",
+      "properties": {
+        "courseId": { "type": "integer" },
+        "students": { "type": "integer" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "students"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Individual user profiles protected by UID"
+    },
+    "/courseStats/{courseId}": {
+      "schema": "CourseStat",
+      "description": "Public statistics for courses"
+    },
+    "/doubts/{doubtId}": {
+      "schema": "Doubt",
+      "description": "Main community feed of questions"
+    },
+    "/doubts/{doubtId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Replies nested under doubts"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Content reports for moderation"
+    }
+  }
+}

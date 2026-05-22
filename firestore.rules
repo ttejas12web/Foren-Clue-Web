@@ -31,12 +31,8 @@ service cloud.firestore {
 
     function isValidDoubt(data) {
       return data.keys().hasAll(['id', 'title', 'content', 'authorId', 'authorName', 'createdAt'])
-        && data.title is string && data.title.size() <= 200
-        && data.content is string && data.content.size() <= 5000
-        && (!data.keys().hasAny(['imageUrl']) || (data.imageUrl is string && data.imageUrl.size() <= 800000))
-        && (!data.keys().hasAny(['category']) || (data.category is string && data.category.size() <= 100))
-        && (!data.keys().hasAny(['likes']) || (data.likes is list && data.likes.size() <= 5000 && (data.likes.size() == 0 || data.likes[0] is string)))
-        && (!data.keys().hasAny(['resolved']) || data.resolved is bool);
+        && data.title is string && data.title.size() <= 1000
+        && data.content is string && data.content.size() <= 15000;
     }
 
     function isValidComment(data) {

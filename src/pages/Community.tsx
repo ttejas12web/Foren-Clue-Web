@@ -90,11 +90,6 @@ export default function Community() {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newCategory, setNewCategory] = useState(FORENSIC_CATEGORIES[0]);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePostDoubtClick = () => {
     if (!user) {
@@ -129,61 +124,6 @@ export default function Community() {
     return () => unsubscribe();
   }, []);
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPostError(null);
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      
-      if (file.type !== "image/jpeg" && file.type !== "image/jpg") {
-        setPostError("Only JPG/JPEG formats are allowed.");
-        return;
-      }
-      
-      if (file.size > 1024 * 1024) {
-        setPostError("Image must be under 1MB.");
-        return;
-      }
-
-      setImageFile(file);
-      setIsUploadingImage(true);
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-
-      try {
-        const compressedBlob = await compressImage(file, 1000, 0.6);
-        
-        const urlResult = await new Promise<string>((resolve) => {
-             const dataUrlReader = new FileReader();
-             dataUrlReader.onloadend = () => resolve(dataUrlReader.result as string);
-             dataUrlReader.readAsDataURL(compressedBlob);
-        });
-
-        if (urlResult && urlResult.length > 800000) {
-            setPostError("This image is too large. Please use an image file under 1MB.");
-            setImageFile(null);
-            setImagePreview(null);
-            setUploadedImageUrl(null);
-        } else {
-            setUploadedImageUrl(urlResult);
-            setPostError(null);
-        }
-
-      } catch (err) {
-        console.error("Image processing failed:", err);
-        setPostError("Failed to process image. Please try again.");
-        setImageFile(null);
-        setImagePreview(null);
-        setUploadedImageUrl(null);
-      } finally {
-        setIsUploadingImage(false);
-      }
-    }
-  };
-
   const handleCreateDoubt = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || (!newTitle && !newContent)) return;
@@ -191,18 +131,18 @@ export default function Community() {
     setIsPosting(true);
     setPostError(null);
     setPostingStatus('Filing case...');
-    let imageUrl = uploadedImageUrl || '';
 
     try {
+      console.log("Creating doubtRef...");
       const doubtRef = doc(collection(db, 'doubts'));
       const id = doubtRef.id;
       
+      console.log("Setting document data...");
       await setDoc(doubtRef, {
         id,
         title: newTitle,
         content: newContent,
         category: newCategory,
-        imageUrl,
         authorId: user.uid,
         authorName: userProfile?.displayName || user.displayName || 'Anonymous',
         authorPhoto: userProfile?.photoURL || user.photoURL || '',
@@ -210,12 +150,15 @@ export default function Community() {
         likes: [],
         resolved: false
       });
+      console.log("Document created successfully.");
 
       // Increment user's doubtsCount
       try {
+        console.log("Updating doubtsCount...");
         await updateDoc(doc(db, 'users', user.uid), {
           doubtsCount: increment(1)
         });
+        console.log("doubtsCount updated.");
       } catch (err) {
         console.warn("Failed to increment doubtsCount:", err);
       }
@@ -223,16 +166,10 @@ export default function Community() {
       setNewTitle('');
       setNewContent('');
       setNewCategory(FORENSIC_CATEGORIES[0]);
-      setImageFile(null);
-      setImagePreview(null);
-      setUploadedImageUrl(null);
       setShowCreateModal(false);
     } catch (error: any) {
       console.error('Error creating post:', error);
       setPostError(error.message || "Failed to post doubt. Please try again.");
-      if (error.code?.startsWith('permission')) {
-        handleFirestoreError(error, OperationType.WRITE, 'doubts');
-      }
     } finally {
       setIsPosting(false);
       setPostingStatus(null);
@@ -522,51 +459,6 @@ export default function Community() {
                   />
                 </div>
 
-                <div className="bg-base/50 p-6 border-2 border-dashed border-black/10 dark:border-white/5 rounded-xl group hover:border-warning/30 transition-colors">
-                  <input 
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                  />
-                  
-                  {imagePreview ? (
-                    <div className="relative rounded-lg overflow-hidden border border-black/10 dark:border-white/10">
-                      <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-48 object-cover" />
-                      {isUploadingImage && (
-                        <div className="absolute inset-0 bg-crust/50 backdrop-blur-sm flex flex-col items-center justify-center">
-                           <Loader2 size={32} className="text-warning animate-spin mb-2" />
-                           <p className="text-xs font-black uppercase tracking-widest text-warning shadow-black drop-shadow-md">Uploading Evidence...</p>
-                        </div>
-                      )}
-                      {!isUploadingImage && (
-                        <button 
-                          type="button"
-                          onClick={() => { setImageFile(null); setImagePreview(null); setUploadedImageUrl(null); }}
-                          className="absolute top-2 right-2 bg-crust/80 p-1.5 rounded-full text-text-main hover:bg-warning hover:text-crust transition-all shadow-lg"
-                        >
-                          <X size={16} strokeWidth={3} />
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <button 
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex flex-col items-center justify-center gap-3 py-4"
-                    >
-                      <div className="w-12 h-12 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center text-text-muted group-hover:bg-warning group-hover:text-crust transition-all">
-                        <ImageIcon size={24} />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-xs font-black uppercase tracking-widest text-text-main">Upload Evidence Image</p>
-                        <p className="text-[10px] uppercase tracking-tighter text-text-muted mt-1">JPG ONLY, up to 1MB</p>
-                      </div>
-                    </button>
-                  )}
-                </div>
-
                 {postError && (
                   <div className="p-4 bg-error/10 border border-error/20 rounded-lg text-error text-xs font-bold uppercase tracking-widest text-center">
                     {postError}
@@ -576,7 +468,7 @@ export default function Community() {
                 <div className="flex gap-4 pt-4">
                   <button 
                     type="submit"
-                    disabled={isPosting || isUploadingImage}
+                    disabled={isPosting}
                     className="flex-1 bg-warning text-crust font-black uppercase tracking-widest py-4 rounded-lg hover:bg-warning-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     {isPosting ? (

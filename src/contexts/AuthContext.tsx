@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
 import { auth, googleProvider, db } from '../lib/firebase';
-import { doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { Fingerprint, Search, ShieldCheck, Activity } from 'lucide-react';
 
@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       try {
         // Try getting from cache/server first to ensure doc exists
-        const userSnap = await getDocFromServer(userRef);
+        const userSnap = await getDoc(userRef);
         
         if (!userSnap.exists()) {
           try {

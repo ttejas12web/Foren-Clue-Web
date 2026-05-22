@@ -25,6 +25,7 @@ const Contact = lazy(() => import('./pages/Contact'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CoursePlayer = lazy(() => import('./pages/CoursePlayer'));
+const GoogleChat = lazy(() => import('./pages/GoogleChat'));
 const MyDoubts = lazy(() => import('./pages/MyDoubts'));
 const Login = lazy(() => import('./pages/Login'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
@@ -94,6 +95,7 @@ export default function App() {
                     <Route path="/profile" element={<Profile />} />
                     <Route path="/profile/:userId" element={<Profile />} />
                     <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/chat" element={<GoogleChat />} />
                     <Route path="/login" element={<Login />} />
                   </Routes>
                 </Suspense>

@@ -117,7 +117,7 @@ export default function Home() {
               {[
                 { icon: Search, title: "Case-Based", desc: "Real crime case breakdowns" },
                 { icon: BookOpen, title: "Structured", desc: "Courses Beginner → Advanced" },
-                { icon: Users, title: "Career Path", desc: "Internships & skills roadmap" },
+                { icon: Users, title: "Career Path", desc: "Skills roadmap & guidance" },
                 { icon: ShieldAlert, title: "Certified", desc: "Recognized certification programs" }
               ].map((feature, i) => (
                 <motion.div 
@@ -163,7 +163,7 @@ export default function Home() {
                  author: "Ananya V., Senior Analyst"
                },
                {
-                 quote: "The structured learning path helped me secure my first internship in a state forensic lab.",
+                 quote: "The structured learning path helped me secure my first role in a state forensic lab.",
                  author: "Rahul K., FS Graduate"
                },
                {

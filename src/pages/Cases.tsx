@@ -1,16 +1,17 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
-import { MagnifyingGlassViewer } from '@/components/ui/ThreeDElement';
-import { CrimeSceneViewer, Evidence } from '@/components/ui/CrimeSceneViewer';
-import { GoogleGenAI, Type } from '@google/genai';
 import { 
   Loader2, Sparkles, X, Box, FileText, ChevronRight, Clock, 
   MapPin, Microscope, Info, Search, Filter, Brain, Dna, 
   Target, Fingerprint, Database, AlertCircle, CheckCircle2,
-  Trophy, BookOpen
+  Trophy, BookOpen, Edit, Trash2, Plus
 } from 'lucide-react';
 import Markdown from 'react-markdown';
+import { useAuth, adminEmails } from '@/contexts/AuthContext';
+import { db } from '@/lib/firebase';
+import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
+import { CaseEditorModal } from '@/components/ui/CaseEditorModal';
 
 // --- Types ---
 interface CaseFile {
@@ -24,244 +25,53 @@ interface CaseFile {
   image: string;
   summary: string;
   details: string;
+  status?: string;
+  createdBy?: string;
   evidenceLabels?: string[];
   attachments?: string[];
-}
-
-interface AIParams {
-  type: string;
-  difficulty: string;
-  technique: string;
-}
-
-interface GeneratedCaseData {
-  title: string;
-  story: string;
-  evidence: Evidence[];
-  suspects: { name: string; description: string; alibi: string; motive: string }[];
-  quiz: { question: string; options: string[]; answer: number; explanation: string }[];
-  conclusion: string;
-}
-
-// --- Data ---
-const REAL_CASES: CaseFile[] = [
-  {
-    id: 'shark-arm',
-    title: "The Shark Arm Mystery",
-    tag: "Forensic Serology",
-    year: "1935",
-    location: "Sydney, Australia",
-    difficulty: "Advanced",
-    type: "Homicide",
-    image: "https://images.unsplash.com/photo-1551244072-5d12893278ab?auto=format&fit=crop&q=80&w=1000",
-    summary: "A captured tiger shark vomited a human arm, leading to a murder investigation that challenged the legal definition of a corpse.",
-    details: `
-### THE INVESTIGATION
-In April 1935, a tiger shark caught off Coogee Beach vomited a human arm. Forensic examination by Dr. Palmer revealed the arm was not bitten off but surgically removed.
-
-### FORENSIC BREAKTHROUGHS
-*   **Fingerprint Recovery:** Despite partial digestion, experts recovered a clear fingerprint from the thumb.
-*   **Tattoo Identification:** A distinctive tattoo of two boxers led to the identification of James Smith, a missing small-time criminal.
-*   **Legal Precedent:** The case reached the High Court of Australia, debating whether an arm alone constitutes a body for a murder charge.
-
-### TECHNIQUES USED
-1.  **Dactyloscopy:** Advanced fingerprint recovery from water-damaged skin.
-2.  **Surgical Analysis:** Determining the method of dismemberment.
-3.  **Marine Biology:** Estimating digestion rates to determine immersion timing.
-    `,
-    evidenceLabels: ['Fingerprint', 'Surgical Tool Marks', 'Tattoo Card'],
-    attachments: ['Autopsy Report', 'Fingerprint Match', 'Court Transcript']
-  },
-  {
-    id: 'btk-digital',
-    title: "The BTK Killer Capture",
-    tag: "Digital Forensics",
-    year: "2005",
-    location: "Wichita, Kansas",
-    difficulty: "Expert",
-    type: "Cold Case",
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1000",
-    summary: "After 30 years of evasion, Dennis Rader was caught through a single piece of metadata hidden on a floppy disk.",
-    details: `
-### THE CASE
-Dennis Rader, known as 'BTK', terrorized Wichita for decades. In 2004, he resumed communication, believing he was untraceable.
-
-### FORENSIC BREAKTHROURHS
-*   **Metadata Extraction:** Police received a purple floppy disk. Analysts examined the FAT system.
-*   **Deleted Code Recovery:** Forensic software recovered a deleted Word document.
-*   **Identity Leak:** Metadata listed 'Christ Lutheran Church' and 'Dennis' as the last editor.
-
-### TECHNIQUES USED
-1.  **FAT System Analysis:** Deep system file inspection.
-2.  **Data Carving:** Recovering fragments from unallocated space.
-3.  **Registry Correlation:** Mapping digital footprints to physical locations.
-    `,
-    evidenceLabels: ['Floppy Disk', 'Word Metadata', 'Church Records'],
-    attachments: ['Digital Metadata Log', 'Recovery Report', 'Arrest Record']
-  },
-  {
-    id: 'romanov-dna',
-    title: "The Romanov Identification",
-    tag: "DNA Analysis",
-    year: "1991",
-    location: "Yekaterinburg, Russia",
-    difficulty: "Scientific",
-    type: "Cold Case",
-    image: "https://images.unsplash.com/photo-1542382257-80dedb725088?auto=format&fit=crop&q=80&w=1000",
-    summary: "The mystery of the missing Russian Imperial family solved using mitochondrial DNA.",
-    details: `
-### THE DISCOVERY
-Mass graves discovered in the Ural mountains were believed to contain the remains of Tsar Nicholas II.
-
-### FORENSIC BREAKTHROUGHS
-*   **mtDNA Sequencing:** Used to check remains against living relatives like HRH Prince Philip.
-*   **Heteroplasmy:** A rare mutation found in Nicholas II and his brother confirmed identity.
-*   **Anthropology:** Matched skeletal ages and dental records to imperial files.
-
-### TECHNIQUES USED
-1.  **Mitochondrial DNA (mtDNA):** Matrilineal lineage tracking.
-2.  **Facial Superimposition:** Skeletal measurements vs portraits.
-    `,
-    evidenceLabels: ['Skeletal Remains', 'Living Sample DNA', 'Imperial Records'],
-    attachments: ['mtDNA Sequence', 'Anthropology Report', 'Family Tree']
-  }
-];
-
-// --- AI Setup ---
-let aiInstance: GoogleGenAI | null = null;
-function getAI() {
-  if (!aiInstance) {
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) throw new Error("GEMINI_API_KEY_MISSING");
-    aiInstance = new GoogleGenAI({ apiKey: key });
-  }
-  return aiInstance;
+  contentImages?: string[];
+  sources?: { title: string; url: string }[];
+  forensicTechniques?: string[];
 }
 
 export default function Cases() {
-  const [activeView, setActiveView] = useState<'archive' | 'lab'>('archive');
+  const { user, isAdmin } = useAuth();
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('All');
   const [selectedCase, setSelectedCase] = useState<CaseFile | null>(null);
 
-  // AI Simulation State
-  const [aiParams, setAiParams] = useState<AIParams>({ type: 'Homicide', difficulty: 'Beginner', technique: 'DNA' });
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedCase, setGeneratedCase] = useState<GeneratedCaseData | null>(null);
-  const [analyzeMode, setAnalyzeMode] = useState(false);
-  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
-  const [quizScore, setQuizScore] = useState(0);
-  const [quizFinished, setQuizFinished] = useState(false);
-  const [activeTab, setActiveTab] = useState<'story' | 'threeD' | 'suspects'>('story');
+  const [dbCases, setDbCases] = useState<CaseFile[]>([]);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [caseToEdit, setCaseToEdit] = useState<CaseFile | null>(null);
+
+  useEffect(() => {
+    const q = query(collection(db, 'cases'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const casesData: CaseFile[] = [];
+      snapshot.forEach((doc) => {
+        casesData.push({ id: doc.id, ...doc.data() } as CaseFile);
+      });
+      setDbCases(casesData);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const filteredArchive = useMemo(() => {
-    return REAL_CASES.filter(c => {
+    const allCases = [...dbCases].filter(c => {
+       // Only keep files published by admins
+       if (!c.createdBy || !adminEmails.some(e => e.trim().toLowerCase() === c.createdBy!.trim().toLowerCase())) return false;
+       // user can see published, or admin can see all
+       return c.status !== 'draft' || isAdmin;
+    });
+
+    return allCases.filter(c => {
       const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            c.summary.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesFilter = filterType === 'All' || c.type === filterType;
       return matchesSearch && matchesFilter;
     });
-  }, [searchQuery, filterType]);
-
-  const generateAICase = async () => {
-    setIsGenerating(true);
-    setGeneratedCase(null);
-    setAnalyzeMode(false);
-    setQuizFinished(false);
-    setQuizScore(0);
-    setCurrentQuizIndex(0);
-    
-    try {
-      const ai = getAI();
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: `Generate a detailed forensic case for training.
-        Type: ${aiParams.type}
-        Difficulty: ${aiParams.difficulty}
-        Focal Technique: ${aiParams.technique}
-        
-        Return JSON with:
-        "title": string,
-        "story": markdown (narrative, investigation steps, evidence findings),
-        "evidence": array of {id, name, finding, type, position:[x,y,z]} (types: blood, fingerprint, weapon, body, glass, generic),
-        "suspects": array of {name, description, alibi, motive},
-        "quiz": array of 3 {question, options:string[], answer:number (index), explanation},
-        "conclusion": string.
-        
-        Position constraints: x and z between -7 and 7. y is 0.`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              story: { type: Type.STRING },
-              evidence: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    id: { type: Type.STRING },
-                    name: { type: Type.STRING },
-                    finding: { type: Type.STRING },
-                    type: { type: Type.STRING },
-                    position: { type: Type.ARRAY, items: { type: Type.NUMBER } }
-                  }
-                }
-              },
-              suspects: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    description: { type: Type.STRING },
-                    alibi: { type: Type.STRING },
-                    motive: { type: Type.STRING }
-                  }
-                }
-              },
-              quiz: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    question: { type: Type.STRING },
-                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    answer: { type: Type.INTEGER },
-                    explanation: { type: Type.STRING }
-                  }
-                }
-              },
-              conclusion: { type: Type.STRING }
-            },
-            required: ["title", "story", "evidence", "suspects", "quiz", "conclusion"]
-          }
-        }
-      });
-      
-      const data = JSON.parse(response.text);
-      setGeneratedCase(data);
-      setActiveTab('story');
-    } catch (err) {
-      console.error("Simulation error:", err);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleAnswer = (idx: number) => {
-    if (!generatedCase) return;
-    if (idx === generatedCase.quiz[currentQuizIndex].answer) {
-      setQuizScore(s => s + 1);
-    }
-    
-    if (currentQuizIndex < generatedCase.quiz.length - 1) {
-      setCurrentQuizIndex(i => i + 1);
-    } else {
-      setQuizFinished(true);
-    }
-  };
+  }, [searchQuery, filterType, dbCases, isAdmin]);
 
   return (
     <div className="min-h-screen bg-base py-24 pb-32">
@@ -271,27 +81,8 @@ export default function Cases() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
-        {/* View Switcher */}
-        <div className="flex justify-center mb-16">
-          <div className="inline-flex p-1 bg-surface border border-black/10 dark:border-white/5 rounded-2xl shadow-2xl">
-            <button 
-              onClick={() => setActiveView('archive')}
-              className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all ${activeView === 'archive' ? 'bg-warning text-crust' : 'text-text-muted hover:text-text-main'}`}
-            >
-              <Database size={14} /> Investigation Archive
-            </button>
-            <button 
-              onClick={() => setActiveView('lab')}
-              className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] transition-all ${activeView === 'lab' ? 'bg-warning text-crust shadow-[0_0_20px_rgba(255,191,0,0.3)]' : 'text-text-muted hover:text-text-main'}`}
-            >
-              <Brain size={14} /> AI Simulation Lab
-            </button>
-          </div>
-        </div>
-
-        {activeView === 'archive' ? (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Header */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          {/* Header */}
             <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
               <div>
                 <h1 className="text-5xl md:text-7xl font-heading font-black uppercase tracking-tighter mb-4">
@@ -323,6 +114,17 @@ export default function Cases() {
                       {t}
                     </button>
                   ))}
+                  {isAdmin && (
+                    <button 
+                      onClick={() => {
+                         setCaseToEdit(null);
+                         setIsEditorOpen(true);
+                      }}
+                      className="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border border-warning/50 text-warning hover:bg-warning/10 transition-all shrink-0 flex items-center gap-1"
+                    >
+                      <Plus size={12}/> Add Case
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -339,8 +141,11 @@ export default function Cases() {
                   <div className="h-56 relative overflow-hidden">
                     <img src={item.image} className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={item.title} />
                     <div className="absolute inset-0 bg-gradient-to-t from-base via-base/20 to-transparent" />
-                    <div className="absolute bottom-4 left-4 flex gap-2">
+                    <div className="absolute absolute bottom-4 left-4 flex flex-wrap gap-2">
                       <span className="px-3 py-1 bg-warning text-crust text-[8px] font-black uppercase tracking-widest rounded-lg">{item.tag}</span>
+                      {item.status === 'draft' && isAdmin && (
+                        <span className="px-3 py-1 bg-red-500/80 text-white text-[8px] font-black uppercase tracking-widest rounded-lg">Draft</span>
+                      )}
                     </div>
                   </div>
                   <div className="p-8">
@@ -359,7 +164,7 @@ export default function Cases() {
                         ))}
                       </div>
                       <span className="text-[10px] font-black uppercase tracking-widest text-warning group-hover:translate-x-2 transition-transform inline-flex items-center gap-1">
-                        View Dossier <ChevronRight size={14} />
+                        Open Case <ChevronRight size={14} />
                       </span>
                     </div>
                   </div>
@@ -367,188 +172,6 @@ export default function Cases() {
               ))}
             </div>
           </motion.div>
-        ) : (
-          <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-            {/* Lab Simulation Mode */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-              {/* Controls Sidebar */}
-              <div className="lg:col-span-4 space-y-8">
-                <div className="bg-surface border border-black/10 dark:border-white/5 p-8 rounded-3xl shadow-2xl">
-                  <div className="flex items-center gap-2 mb-8 text-warning">
-                    <Brain size={24} />
-                    <h2 className="text-xl font-black uppercase tracking-tight">Simulator Config</h2>
-                  </div>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3 block">Crime Classification</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {['Homicide', 'Theft', 'Cyber', 'Forgery'].map(t => (
-                          <button 
-                            key={t}
-                            onClick={() => setAiParams({...aiParams, type: t})}
-                            className={`p-3 rounded-xl border text-[9px] font-bold uppercase tracking-widest transition-all ${aiParams.type === t ? 'bg-warning/10 border-warning text-warning shadow-[0_0_15px_rgba(255,191,0,0.1)]' : 'border-black/10 dark:border-white/5 text-text-muted hover:border-black/10 dark:border-white/10'}`}
-                          >
-                            {t}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3 block">Specialized Area</label>
-                      <select 
-                        value={aiParams.technique}
-                        onChange={(e) => setAiParams({...aiParams, technique: e.target.value})}
-                        className="w-full bg-crust border border-black/10 dark:border-white/5 rounded-xl p-4 text-xs font-bold outline-none focus:border-warning/50 appearance-none"
-                      >
-                        <option>DNA Phenotyping</option>
-                        <option>Ballistics</option>
-                        <option>Digital Forensics</option>
-                        <option>Toxicology</option>
-                        <option>Odontology</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-3 block">Cognitive Difficulty</label>
-                      <div className="flex gap-2">
-                        {['Beginner', 'Advanced', 'Expert'].map(d => (
-                          <button 
-                            key={d}
-                            onClick={() => setAiParams({...aiParams, difficulty: d})}
-                            className={`flex-1 py-3 rounded-xl border text-[8px] font-bold uppercase tracking-widest transition-all ${aiParams.difficulty === d ? 'bg-warning/10 border-warning text-warning' : 'border-black/10 dark:border-white/5 text-text-muted hover:border-black/10 dark:border-white/10'}`}
-                          >
-                            {d}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button 
-                      onClick={generateAICase}
-                      disabled={isGenerating}
-                      className="w-full bg-warning text-crust py-4 rounded-xl font-black uppercase tracking-widest text-xs hover:shadow-[0_0_30px_rgba(255,191,0,0.4)] transition-all disabled:opacity-50 flex items-center justify-center gap-2 group"
-                    >
-                      {isGenerating ? <Loader2 className="animate-spin" size={16} /> : <Sparkles className="group-hover:animate-pulse" size={16} />}
-                      {isGenerating ? "Synthesizing Evidence..." : "Initiate Simulation"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 bg-warning/5 border border-warning/10 rounded-2xl">
-                   <div className="flex items-center gap-2 mb-3">
-                      <Target size={16} className="text-warning" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-warning">Simulation Goal</span>
-                   </div>
-                   <p className="text-[10px] text-text-muted font-medium leading-relaxed italic">
-                     This module uses generative intelligence to build complex investigative scenarios. Use the 3D lab to inspect evidence before attempting the final analysis.
-                   </p>
-                </div>
-              </div>
-
-              {/* Main Content Area */}
-              <div className="lg:col-span-8">
-                {generatedCase ? (
-                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                    <div className="bg-surface border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[700px]">
-                      {/* Tabs */}
-                      <div className="flex border-b border-black/10 dark:border-white/5 shrink-0">
-                        {[
-                          { id: 'story', icon: FileText, label: 'Investigation File' },
-                          { id: 'threeD', icon: Box, label: 'Virtual Scene' },
-                          { id: 'suspects', icon: Search, label: 'Suspect Pool' }
-                        ].map(t => (
-                          <button 
-                            key={t.id}
-                            onClick={() => setActiveTab(t.id as any)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-5 text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === t.id ? 'text-warning border-b-2 border-warning bg-warning/5' : 'text-text-muted hover:text-text-main'}`}
-                          >
-                            <t.icon size={14} /> {t.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="flex-1 overflow-y-auto p-10 custom-scrollbar relative">
-                        <AnimatePresence mode="wait">
-                          {activeTab === 'story' && (
-                            <motion.div key="story" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="prose prose-invert prose-warning max-w-none">
-                              <h2 className="text-4xl font-heading font-black uppercase tracking-tight text-text-main mb-8 border-l-4 border-warning pl-6">{generatedCase.title}</h2>
-                              <div className="text-text-muted">
-                                <Markdown>{generatedCase.story}</Markdown>
-                              </div>
-                            </motion.div>
-                          )}
-
-                          {activeTab === 'threeD' && (
-                            <motion.div key="threeD" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="h-full absolute inset-0">
-                              <CrimeSceneViewer evidence={generatedCase.evidence} className="h-full w-full" />
-                            </motion.div>
-                          )}
-
-                          {activeTab === 'suspects' && (
-                            <motion.div key="suspects" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              {generatedCase.suspects.map((s, i) => (
-                                <div key={i} className="bg-crust p-8 border border-black/10 dark:border-white/5 rounded-2xl hover:border-warning/30 transition-colors">
-                                  <div className="flex items-center gap-4 mb-6">
-                                    <div className="w-12 h-12 bg-base rounded-xl flex items-center justify-center border border-black/10 dark:border-white/10">
-                                      <Search className="text-text-muted" size={20} />
-                                    </div>
-                                    <h4 className="text-xl font-heading font-black uppercase italic">{s.name}</h4>
-                                  </div>
-                                  <div className="space-y-4">
-                                    <div>
-                                      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-warning mb-1 block">Profile</span>
-                                      <p className="text-xs text-text-muted italic">"{s.description}"</p>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div>
-                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-muted mb-1 block">Alibi</span>
-                                        <p className="text-[10px] font-bold">{s.alibi}</p>
-                                      </div>
-                                      <div>
-                                        <span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-muted mb-1 block">Motive</span>
-                                        <p className="text-[10px] font-bold">{s.motive}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                      {/* Footer Actions */}
-                      <div className="p-6 border-t border-black/10 dark:border-white/5 bg-crust/50 flex justify-between items-center shrink-0">
-                        <div className="flex items-center gap-2">
-                           <AlertCircle size={14} className="text-warning" />
-                           <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">Evidence Fully Processed</span>
-                        </div>
-                        <button 
-                          onClick={() => setAnalyzeMode(true)}
-                          className="flex items-center gap-2 px-8 py-3 bg-white text-crust font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-warning transition-all"
-                        >
-                          <Brain size={14} /> Analyze & Solve Case
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <div className="h-[700px] border-2 border-dashed border-black/10 dark:border-white/5 rounded-3xl flex flex-col items-center justify-center text-center p-12">
-                     <div className="w-24 h-24 bg-surface rounded-full flex items-center justify-center mb-8 border border-black/10 dark:border-white/10 shadow-2xl">
-                        <Database size={40} className="text-text-muted opacity-20" />
-                     </div>
-                     <h3 className="text-2xl font-heading font-black uppercase italic mb-4 tracking-wider">Awaiting Simulation Data</h3>
-                     <p className="text-text-muted max-w-sm font-medium leading-relaxed">
-                       Configure the investigation parameters on the sidebar to generate a new forensic challenge.
-                     </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
       </div>
 
       {/* Real Case Detail Modal */}
@@ -573,8 +196,14 @@ export default function Cases() {
                     <FileText size={20} className="text-warning" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black uppercase tracking-tight">{selectedCase.title}</h2>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Official Forensic Archive</p>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-xl font-black uppercase tracking-tight">{selectedCase.title}</h2>
+                      <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/10 border border-green-500/20 rounded-md">
+                        <CheckCircle2 size={10} className="text-green-500" />
+                        <span className="text-[8px] font-black uppercase text-green-500">Verified</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Official Forensic Archive • Expert Peer-Reviewed</p>
                   </div>
                 </div>
                 <button 
@@ -585,7 +214,37 @@ export default function Cases() {
                 </button>
               </div>
 
-              <div className="flex-1 flex flex-col lg:flex-row">
+              <div className="flex-1 flex flex-col lg:flex-row relative">
+                {isAdmin && selectedCase && (
+                   <div className="absolute top-4 right-4 z-40 flex items-center gap-2">
+                     <button
+                        onClick={() => {
+                           setCaseToEdit(selectedCase);
+                           setSelectedCase(null);
+                           setIsEditorOpen(true);
+                        }}
+                        className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                     >
+                       <Edit size={14}/> Edit
+                     </button>
+                     <button
+                        onClick={async () => {
+                           if (confirm('Are you sure you want to delete this case?')) {
+                              try {
+                                 await deleteDoc(doc(db, 'cases', selectedCase.id));
+                                 setSelectedCase(null);
+                              } catch (e) {
+                                 console.error("Error deleting case", e);
+                              }
+                           }
+                        }}
+                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                     >
+                       <Trash2 size={14}/> Delete
+                     </button>
+                   </div>
+                )}
+                
                 <div className="lg:w-80 p-8 border-r border-black/10 dark:border-white/5 bg-crust/30 space-y-8">
                   <div>
                     <label className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-3 block">Primary Evidence</label>
@@ -616,26 +275,87 @@ export default function Cases() {
                     </div>
                   </div>
 
-                  {selectedCase.attachments && (
+                  {selectedCase.attachments && selectedCase.attachments.length > 0 && (
                     <div>
                       <label className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-4 block">Archive Attachments</label>
                       <div className="space-y-2">
-                        {selectedCase.attachments.map(a => (
-                          <div key={a} className="group flex items-center justify-between p-4 bg-base border border-black/10 dark:border-white/5 rounded-xl hover:border-warning/30 transition-all cursor-pointer">
-                            <div className="flex items-center gap-3">
-                              <FileText size={14} className="text-text-muted group-hover:text-warning" />
-                              <span className="text-[10px] font-bold text-text-muted group-hover:text-text-main">{a}</span>
+                        {selectedCase.attachments.map((a, i) => {
+                          const isUrlOrBase64 = a.startsWith('http') || a.startsWith('data:');
+                          const displayName = isUrlOrBase64 ? `Attachment File ${i + 1}` : a;
+                          return (
+                          <a href={isUrlOrBase64 ? a : '#'} target={isUrlOrBase64 ? '_blank' : undefined} rel="noreferrer" key={i} className="group flex items-center justify-between p-4 bg-base border border-black/10 dark:border-white/5 rounded-xl hover:border-warning/30 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-warning/50">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <FileText size={14} className="text-text-muted group-hover:text-warning shrink-0" />
+                              <span className="text-[10px] font-bold text-text-muted group-hover:text-text-main truncate text-ellipsis">{displayName}</span>
                             </div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                          </div>
-                        ))}
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] shrink-0" />
+                          </a>
+                        )})}
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar max-h-[70vh]">
+                <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar max-h-[85vh]">
                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="prose prose-invert prose-warning max-w-none">
-                      <Markdown>{selectedCase.details}</Markdown>
+                      <div className="mb-12">
+                        <Markdown>{selectedCase.details}</Markdown>
+                      </div>
+
+                      {selectedCase.contentImages && selectedCase.contentImages.length > 0 && (
+                        <div className="mb-12">
+                          <h3 className="text-xl font-black uppercase tracking-tight text-text-main mb-6 flex items-center gap-2">
+                             <Box size={20} className="text-warning" /> Scientific Gallery
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {selectedCase.contentImages.map((img, idx) => (
+                              <div key={idx} className="relative group overflow-hidden rounded-2xl border border-black/10 dark:border-white/10 aspect-video">
+                                <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Evidence detail" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Visual Evidence Dossier #{idx + 1}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedCase.forensicTechniques && (
+                        <div className="mb-12 p-8 bg-warning/5 border border-warning/10 rounded-3xl">
+                          <h3 className="text-xl font-black uppercase tracking-tight text-warning mb-6 flex items-center gap-2">
+                             <Microscope size={20} /> Applied Forensic Techniques
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {selectedCase.forensicTechniques.map((tech, idx) => (
+                              <div key={idx} className="flex items-center gap-3 p-3 bg-surface border border-black/10 dark:border-white/5 rounded-xl">
+                                <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center shrink-0">
+                                  <CheckCircle2 size={14} className="text-warning" />
+                                </div>
+                                <span className="text-xs font-bold text-text-main">{tech}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedCase.sources && (
+                        <div className="mt-16 pt-8 border-t border-black/10 dark:border-white/5">
+                          <h3 className="text-sm font-black uppercase tracking-widest text-text-muted mb-6">Expert Verification & Sources</h3>
+                          <div className="flex flex-wrap gap-4">
+                            {selectedCase.sources.map((source, idx) => (
+                              <a 
+                                key={idx} 
+                                href={source.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg text-xs font-bold text-text-muted hover:text-warning hover:border-warning/30 transition-all"
+                              >
+                                {source.title}
+                                <Info size={12} />
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                    </motion.div>
                 </div>
               </div>
@@ -643,96 +363,17 @@ export default function Cases() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Analyze Mode Modal */}
-      <AnimatePresence>
-        {analyzeMode && generatedCase && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-base/95 backdrop-blur-2xl flex items-center justify-center p-4"
-          >
-            <motion.div 
-              initial={{ y: 50 }}
-              animate={{ y: 0 }}
-              className="bg-surface border border-black/10 dark:border-white/10 w-full max-w-2xl rounded-3xl p-8 shadow-2xl relative overflow-hidden"
-            >
-              {/* Background Glow */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-warning/10 blur-[100px] pointer-events-none" />
-
-              <div className="flex justify-between items-center mb-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-warning text-crust rounded-full flex items-center justify-center font-black">
-                    {currentQuizIndex + 1}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter">Analysis Terminal</h3>
-                    <p className="text-[9px] uppercase tracking-widest text-text-muted">Section {currentQuizIndex + 1} of {generatedCase.quiz.length}</p>
-                  </div>
-                </div>
-                <button onClick={() => setAnalyzeMode(false)} className="text-text-muted hover:text-text-main"><X size={20} /></button>
-              </div>
-
-              {!quizFinished ? (
-                <div className="space-y-8">
-                  <h4 className="text-2xl font-medium leading-normal italic">
-                    "{generatedCase.quiz[currentQuizIndex].question}"
-                  </h4>
-                  <div className="grid gap-3">
-                    {generatedCase.quiz[currentQuizIndex].options.map((opt, i) => (
-                      <button 
-                        key={i}
-                        onClick={() => handleAnswer(i)}
-                        className="group flex items-center justify-between p-6 bg-base border border-black/10 dark:border-white/10 rounded-2xl text-left hover:border-warning/50 hover:bg-warning/5 transition-all outline-none"
-                      >
-                        <span className="text-sm font-medium">{opt}</span>
-                        <ChevronRight size={18} className="text-text-muted group-hover:text-warning" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-10">
-                  <div className="w-24 h-24 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-8 relative">
-                     <Trophy size={48} className="text-warning" />
-                     <motion.div 
-                      initial={{ scale: 0 }} 
-                      animate={{ scale: 1.2 }} 
-                      className="absolute inset-0 border-2 border-warning rounded-full border-dashed animate-spin-slow" 
-                      style={{ animationDuration: '10s' }}
-                    />
-                  </div>
-                  <h3 className="text-4xl font-heading font-black uppercase mb-4">Competency: {Math.round((quizScore / generatedCase.quiz.length) * 100)}%</h3>
-                  <p className="text-text-muted mb-10 max-w-sm mx-auto">
-                    You accurately analyzed {quizScore} out of {generatedCase.quiz.length} critical aspects of this investigation.
-                  </p>
-                  
-                  <div className="bg-crust p-6 rounded-2xl border border-black/10 dark:border-white/5 mb-10">
-                     <h5 className="text-[10px] font-black uppercase tracking-widest text-warning mb-3">Case Conclusion</h5>
-                     <p className="text-xs text-text-muted leading-relaxed line-clamp-3">{generatedCase.conclusion}</p>
-                  </div>
-
-                  <div className="flex gap-4">
-                    <button 
-                      onClick={() => { setAnalyzeMode(false); setGeneratedCase(null); }}
-                      className="flex-1 py-4 bg-white text-crust font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-warning transition-all"
-                    >
-                      New Case
-                    </button>
-                    <button 
-                      onClick={() => setAnalyzeMode(false)}
-                      className="flex-1 py-4 bg-transparent border border-black/10 dark:border-white/10 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-black/5 dark:bg-white/5 transition-all"
-                    >
-                      Return to Lab
-                    </button>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Editor Modal */}
+      {isEditorOpen && isAdmin && user?.email && (
+        <CaseEditorModal 
+          onClose={() => {
+             setIsEditorOpen(false);
+             setCaseToEdit(null);
+          }} 
+          caseToEdit={caseToEdit} 
+          userEmail={user.email}
+        />
+      )}
     </div>
   );
 }

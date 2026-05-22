@@ -31,7 +31,6 @@ export function Footer() {
                   <span className="w-4 h-1 bg-warning"></span> Services
                 </h4>
                 <ul className="space-y-3 text-sm text-text-muted">
-                  <li><Link to="/services" className="hover:text-warning transition-colors">Internships</Link></li>
                   <li><Link to="/services" className="hover:text-warning transition-colors">Workshops</Link></li>
                   <li><Link to="/services" className="hover:text-warning transition-colors">Certifications</Link></li>
                   <li><Link to="/about" className="hover:text-warning transition-colors">About Us</Link></li>

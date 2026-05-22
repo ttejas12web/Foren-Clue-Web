@@ -1,0 +1,290 @@
+import React, { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { X, Upload, Loader2, Plus, Trash2 } from 'lucide-react';
+import { db, storage } from '@/lib/firebase';
+import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+interface CaseEditorModalProps {
+  onClose: () => void;
+  caseToEdit?: any; // the case to edit, or null/undefined if creating new
+  userEmail: string;
+}
+
+export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorModalProps) {
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    title: caseToEdit?.title || '',
+    tag: caseToEdit?.tag || '',
+    year: caseToEdit?.year || '',
+    location: caseToEdit?.location || '',
+    difficulty: caseToEdit?.difficulty || 'Beginner',
+    type: caseToEdit?.type || 'Homicide',
+    summary: caseToEdit?.summary || '',
+    details: caseToEdit?.details || '',
+    status: caseToEdit?.status || 'draft',
+    evidenceLabels: caseToEdit?.evidenceLabels?.join(', ') || '',
+    forensicTechniques: caseToEdit?.forensicTechniques?.join(', ') || '',
+  });
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [existingImage, setExistingImage] = useState(caseToEdit?.image || '');
+  const [contentImages, setContentImages] = useState<string[]>(caseToEdit?.contentImages || []);
+  const [newContentImageFiles, setNewContentImageFiles] = useState<File[]>([]);
+  const [attachments, setAttachments] = useState<string[]>(caseToEdit?.attachments || []);
+  const [newAttachmentFiles, setNewAttachmentFiles] = useState<File[]>([]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setImageFile(e.target.files[0]);
+    }
+  };
+
+  const handleContentImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setNewContentImageFiles(Array.from(e.target.files));
+    }
+  };
+
+  const handleAttachmentsUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setNewAttachmentFiles(Array.from(e.target.files));
+    }
+  };
+
+  const uploadFile = async (file: File, path: string): Promise<string> => {
+    if (storage) {
+      try {
+        const fileRef = ref(storage, path);
+        await uploadBytes(fileRef, file);
+        return await getDownloadURL(fileRef);
+      } catch (err) {
+        console.warn("Storage upload failed, falling back to base64", err);
+      }
+    }
+    
+    // Fallback path: compress images, directly encode other files
+    if (file.type.startsWith('image/')) {
+        const { compressImage } = await import('@/lib/image-utils');
+        const compressedBlob = await compressImage(file, 800, 0.6); // aggressively compress for firestore
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(compressedBlob);
+        });
+    }
+
+    if (file.size > 800000) {
+       throw new Error(`File ${file.name} is too large (>800kb) for direct upload. Please use a smaller file or configure a Storage bucket.`);
+    }
+
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      let mainImageUrl = existingImage;
+      if (imageFile) {
+        mainImageUrl = await uploadFile(imageFile, `cases/${Date.now()}_${imageFile.name}`);
+      }
+
+      let uploadedContentImages = [...contentImages];
+      for (const file of newContentImageFiles) {
+        const url = await uploadFile(file, `cases/content/${Date.now()}_${file.name}`);
+        uploadedContentImages.push(url);
+      }
+
+      let uploadedAttachments = [...attachments];
+      for (const file of newAttachmentFiles) {
+        const url = await uploadFile(file, `cases/attachments/${Date.now()}_${file.name}`);
+        uploadedAttachments.push(url);
+      }
+
+      const caseData = {
+        ...formData,
+        evidenceLabels: formData.evidenceLabels.split(',').map((s: string) => s.trim()).filter(Boolean),
+        forensicTechniques: formData.forensicTechniques.split(',').map((s: string) => s.trim()).filter(Boolean),
+        image: mainImageUrl || 'https://images.unsplash.com/photo-1542382257-80dedb725088?auto=format&fit=crop&q=80&w=1000',
+        contentImages: uploadedContentImages,
+        attachments: uploadedAttachments,
+        createdBy: userEmail,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (caseToEdit?.id && !caseToEdit.id.startsWith('hardcoded_')) {
+        // Update existing document
+        await setDoc(doc(db, 'cases', caseToEdit.id), caseData, { merge: true });
+      } else {
+        // Create new document
+        await addDoc(collection(db, 'cases'), {
+          ...caseData,
+          createdAt: serverTimestamp()
+        });
+      }
+
+      onClose();
+    } catch (err) {
+      console.error("Error saving case:", err);
+      alert("Error saving case. Please check permissions and console.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-base/98 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto">
+      <motion.div 
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="bg-surface border border-black/10 dark:border-white/10 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden my-auto"
+      >
+        <div className="p-6 border-b border-black/10 dark:border-white/5 flex justify-between items-center bg-surface sticky top-0 z-10">
+          <h2 className="text-xl font-heading font-black uppercase">{caseToEdit ? 'Edit Case Study' : 'Add New Case Study'}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg">
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Title</label>
+              <input required name="title" value={formData.title} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Tag (e.g. DNA Analysis)</label>
+              <input required name="tag" value={formData.tag} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Year</label>
+              <input required name="year" value={formData.year} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Location</label>
+              <input required name="location" value={formData.location} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Difficulty</label>
+              <select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none">
+                <option>Beginner</option>
+                <option>Advanced</option>
+                <option>Expert</option>
+                <option>Scientific</option>
+                <option>Historical</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Type</label>
+              <select name="type" value={formData.type} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none">
+                <option>Homicide</option>
+                <option>Cyber</option>
+                <option>Theft</option>
+                <option>Forgery</option>
+                <option>Cold Case</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Status</label>
+              <select name="status" value={formData.status} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none">
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+              </select>
+            </div>
+            <div>
+               <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Main Image (Upload or Link)</label>
+               <input type="text" value={existingImage} onChange={(e) => setExistingImage(e.target.value)} placeholder="Paste image link here (e.g., GDrive, Imgur)" className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none mb-2" />
+               <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-warning/10 file:text-warning hover:file:bg-warning/20" />
+               {imageFile && <div className="mt-2 text-xs text-green-500">File selected: {imageFile.name} (Will override link)</div>}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Summary (Short)</label>
+            <textarea required name="summary" value={formData.summary} onChange={handleChange} rows={2} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none custom-scrollbar" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Details (Markdown supported)</label>
+            <textarea required name="details" value={formData.details} onChange={handleChange} rows={8} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none custom-scrollbar font-mono" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div>
+                <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Evidence Labels (comma separated)</label>
+                <input name="evidenceLabels" value={formData.evidenceLabels} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" placeholder="e.g. Fingerprint, DNA" />
+             </div>
+             <div>
+                <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Forensic Techniques (comma separated)</label>
+                <input name="forensicTechniques" value={formData.forensicTechniques} onChange={handleChange} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" placeholder="e.g. Dactyloscopy, PCR" />
+             </div>
+          </div>
+
+          <div>
+             <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Gallery Images (Upload or Links)</label>
+             <div className="flex gap-2 mb-2">
+               <input type="text" id="galleryLinkInput" placeholder="Paste image link here" className="flex-1 bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" />
+               <button type="button" onClick={() => {
+                 const el = document.getElementById('galleryLinkInput') as HTMLInputElement;
+                 if (el && el.value) {
+                   setContentImages(prev => [...prev, el.value]);
+                   el.value = '';
+                 }
+               }} className="bg-warning/20 text-warning px-4 rounded-lg text-sm font-bold">Add Link</button>
+             </div>
+             <input type="file" accept="image/*" multiple onChange={handleContentImagesUpload} className="w-full text-sm text-text-muted mb-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-warning/10 file:text-warning hover:file:bg-warning/20" />
+             <div className="flex gap-2 flex-wrap">
+               {contentImages.map((img, i) => (
+                  <div key={i} className="relative group">
+                    <img src={img} className="w-16 h-16 object-cover rounded shadow" alt="gallery" />
+                    <button type="button" onClick={() => setContentImages(contentImages.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X size={12}/>
+                    </button>
+                  </div>
+               ))}
+               {newContentImageFiles.map(f => <div key={f.name} className="w-16 h-16 bg-white/5 flex items-center justify-center text-[10px] text-center overflow-hidden rounded border border-white/10">{f.name}</div>)}
+             </div>
+          </div>
+
+          <div>
+             <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Attachments (PDF/Doc - Max 800kb without Storage)</label>
+             <input type="file" accept=".pdf,.doc,.docx,.txt" multiple onChange={handleAttachmentsUpload} className="w-full text-sm text-text-muted mb-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-warning/10 file:text-warning hover:file:bg-warning/20" />
+             <div className="flex gap-2 flex-wrap">
+               {attachments.map((att, i) => (
+                  <div key={i} className="relative group p-2 bg-white/5 rounded border border-white/10 text-xs">
+                    Attachment {i + 1}
+                    <button type="button" onClick={() => setAttachments(attachments.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <X size={12}/>
+                    </button>
+                  </div>
+               ))}
+               {newAttachmentFiles.map(f => <div key={f.name} className="p-2 bg-black/10 dark:bg-white/10 text-xs rounded border border-black/20 dark:border-white/20">{f.name}</div>)}
+             </div>
+          </div>
+
+          <div className="flex justify-end pt-6 border-t border-black/10 dark:border-white/5 gap-4">
+            <button type="button" onClick={onClose} className="px-6 py-2 rounded-lg font-bold text-text-muted hover:text-text-main">
+              Cancel
+            </button>
+            <button type="submit" disabled={loading} className="px-6 py-2 bg-warning text-crust rounded-lg font-bold tracking-widest flex items-center gap-2 hover:bg-warning-dark transition-colors disabled:opacity-50">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : (caseToEdit ? 'Save Changes' : 'Create Case')}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+}

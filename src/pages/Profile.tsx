@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,6 +12,7 @@ import { getNextBadge } from '@/lib/badge-utils';
 
 export default function Profile() {
   const { userId } = useParams();
+  const navigate = useNavigate();
   const { user, userProfile, logout } = useAuth();
   const [targetProfile, setTargetProfile] = useState<any>(null);
   const [userDoubts, setUserDoubts] = useState<any[]>([]);
@@ -435,7 +436,10 @@ export default function Profile() {
             
             {isOwnProfile && (
               <button 
-                onClick={logout}
+                onClick={async () => {
+                  await logout();
+                  navigate('/');
+                }}
                 className="w-full mt-4 bg-transparent border border-red-500/30 text-red-500 font-bold uppercase tracking-widest py-3 rounded-md hover:bg-red-500/10 transition-colors flex items-center justify-center gap-2"
               >
                 <LogOut size={18} />

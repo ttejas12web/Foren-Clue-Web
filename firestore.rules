@@ -9,6 +9,14 @@ service cloud.firestore {
 
     // --- PHASE 3: Primitives ---
     function isSignedIn() { return request.auth != null; }
+    function isAdminEmail() { 
+      return isSignedIn() && (
+        request.auth.token.email.lower() == 'ayushgaikwad7050@gmail.com' ||
+        request.auth.token.email.lower() == 'ayushgaikwad705o@gmail.com' || 
+        request.auth.token.email.lower() == 'mrunmayeebodhe118@gmail.com' ||
+        request.auth.token.email.lower() == 'webcreator500@gmail.com'
+      ); 
+    }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
     function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
@@ -50,6 +58,12 @@ service cloud.firestore {
         && data.students is number;
     }
 
+    // --- Cases ---
+    match /cases/{caseId} {
+      allow read: if true;
+      allow write: if isAdminEmail();
+    }
+
     // --- User Profiles ---
     match /users/{userId} {
       // Allow public get so profile details can be seen in community links
@@ -71,14 +85,18 @@ service cloud.firestore {
 
     // --- Course Stats ---
     match /courseStats/{courseId} {
-      // Anyone can read course stats
       allow read: if true;
-      // Allow increment from client
       allow write: if isSignedIn() && (
         !exists(/databases/$(database)/documents/courseStats/$(courseId)) ? 
           isValidCourseStat(incoming()) : 
           incoming().diff(existing()).affectedKeys().hasOnly(['students', 'updatedAt'])
       );
+    }
+    
+    // --- Course Overrides (Admin dynamically editable courses) ---
+    match /courseOverrides/{courseId} {
+      allow read: if true;
+      allow write: if isAdminEmail();
     }
 
     // --- Community Doubts ---

@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, LogOut, User as UserIcon, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const navLinks = [
   { name: 'Home', path: '/' },
   { name: 'Community', path: '/community' },
+  { name: 'Chat', path: '/chat' },
   { name: 'Courses', path: '/courses' },
   { name: 'Case Studies', path: '/cases' },
   { name: 'Careers', path: '/careers' },
@@ -20,6 +21,7 @@ const navLinks = [
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signInWithGoogle, logout } = useAuth();
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -76,10 +78,10 @@ export function Navbar() {
                 key={link.path}
                 to={link.path}
                 className={cn(
-                  "px-4 py-2 rounded-md font-medium text-sm transition-colors",
+                  "px-4 py-2 font-medium text-sm transition-colors",
                   location.pathname === link.path
-                    ? "bg-black/10 dark:bg-white/10 text-text-main"
-                    : "text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5"
+                    ? "text-warning"
+                    : "text-text-muted hover:text-text-main"
                 )}
               >
                 {link.name}
@@ -99,7 +101,7 @@ export function Navbar() {
                 <div className="relative group/nav-dropdown">
                   <Link 
                     to="/dashboard"
-                    className="flex items-center gap-2 px-3 py-1.5 bg-surface rounded-md border border-black/10 dark:border-white/10 hover:border-warning/30 transition-colors group/profile"
+                    className="flex items-center gap-2 px-1 transition-colors group/profile"
                   >
                      {user.photoURL ? (
                         <img src={user.photoURL} alt={user.displayName || 'User'} className="w-6 h-6 rounded-full" />
@@ -115,7 +117,10 @@ export function Navbar() {
                         View Profile
                       </Link>
                       <button 
-                        onClick={logout}
+                        onClick={async () => {
+                          await logout();
+                          navigate('/');
+                        }}
                         className="w-full text-left flex items-center gap-2 px-4 py-2 text-sm text-text-muted hover:text-warning hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors"
                       >
                         <LogOut size={14} />
@@ -170,10 +175,10 @@ export function Navbar() {
                   to={link.path}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "block px-4 py-3 rounded-md font-medium transition-colors",
+                    "block px-4 py-3 font-medium transition-colors",
                     location.pathname === link.path
-                      ? "bg-black/10 dark:bg-white/10 text-text-main"
-                      : "text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5"
+                      ? "text-warning"
+                      : "text-text-muted hover:text-text-main"
                   )}
                 >
                   {link.name}
@@ -202,13 +207,17 @@ export function Navbar() {
                    <Link
                      to="/profile"
                      onClick={() => setIsOpen(false)}
-                     className="block px-4 py-3 mb-2 rounded-md font-medium text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors"
+                      className="block px-4 py-3 mb-2 font-medium text-text-muted hover:text-text-main transition-colors"
                    >
                      View Profile
                    </Link>
                    <button 
-                     onClick={() => { logout(); setIsOpen(false); }}
-                     className="w-full flex items-center justify-center gap-2 px-5 py-3 border border-black/10 dark:border-white/10 text-text-muted font-bold rounded-md hover:bg-black/5 dark:hover:bg-black/5 dark:bg-white/5 transition-colors"
+                     onClick={async () => { 
+                       await logout(); 
+                       setIsOpen(false); 
+                       navigate('/');
+                     }}
+                      className="w-full flex items-center justify-center gap-2 px-5 py-3 text-text-muted font-bold hover:text-text-main transition-colors"
                    >
                      <LogOut size={18} />
                      Sign Out
@@ -218,7 +227,7 @@ export function Navbar() {
                   <Link
                     to="/login"
                     onClick={() => setIsOpen(false)}
-                    className="w-full block text-center mt-4 px-5 py-3 border border-warning text-warning font-bold rounded-md hover:bg-warning/10 transition-colors"
+                    className="w-full block text-center mt-4 px-5 py-3 text-warning font-bold hover:text-warning-dark transition-colors"
                   >
                     Sign In
                   </Link>

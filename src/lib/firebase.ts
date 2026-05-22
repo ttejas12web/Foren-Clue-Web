@@ -5,7 +5,7 @@ import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
 export const auth = getAuth(app);
 export let storage: any;
 try {
@@ -15,6 +15,10 @@ try {
   storage = null;
 }
 export const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('https://www.googleapis.com/auth/chat');
+
+let cachedAccessToken: string | null = null;
+export const getAccessToken = () => cachedAccessToken;
 
 export enum OperationType {
   CREATE = 'create',

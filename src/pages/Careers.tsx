@@ -52,14 +52,6 @@ export default function Careers() {
                 Get Roadmap
               </button>
             </div>
-
-            <div className="bg-surface/80 backdrop-blur-sm p-8 border border-black/10 dark:border-white/5 shadow-xl">
-              <h3 className="text-xl font-heading font-black mb-4 uppercase text-warning">Internships</h3>
-              <p className="text-sm text-text-muted mb-6">Apply for upcoming forensic lab internships and get hands-on experience.</p>
-              <button className="w-full py-3 border border-black/10 dark:border-white/20 text-text-main font-bold uppercase tracking-wider text-sm hover:border-warning hover:text-warning transition-colors">
-                View Openings
-              </button>
-            </div>
           </div>
         </div>
       </div>

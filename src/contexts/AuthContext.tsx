@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { doc, getDocFromServer, setDoc, onSnapshot } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,9 +24,13 @@ interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
   loading: boolean;
+  isAdmin: boolean;
+  accessToken: string | null;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
+
+export const adminEmails = ['ayushgaikwad7050@gmail.com', 'ayushgaikwad705o@gmail.com', 'mrunmayeebodhe118@gmail.com', 'webcreator500@gmail.com'];
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   // Auth Listener
   useEffect(() => {
@@ -181,9 +186,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [loading]);
 
+  const isAdmin = user?.email ? adminEmails.some(e => e.trim().toLowerCase() === user.email!.trim().toLowerCase()) : false;
+
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        setAccessToken(credential.accessToken);
+      }
     } catch (error: any) {
       console.error("Error signing in with Google: ", error);
       if (error.code === 'auth/unauthorized-domain') {
@@ -198,6 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       await signOut(auth);
+      setAccessToken(null);
     } catch (error) {
       console.error("Error signing out: ", error);
       throw error;
@@ -205,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, signInWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user, userProfile, loading, isAdmin, accessToken, signInWithGoogle, logout }}>
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div 

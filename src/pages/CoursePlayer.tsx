@@ -28,12 +28,17 @@ import {
   MessageCircle,
   Copy,
   Heart as HeartIcon,
-  Pencil
+  Pencil,
+  Edit,
+  Plus,
+  BookOpen,
+  Trash2,
+  FileText
 } from 'lucide-react';
 import { COURSES, Course, Lesson, Module } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from "@/lib/firestoreUtils";
 import { LessonQuiz } from '@/components/Quiz';
 import { 
@@ -53,11 +58,11 @@ import {
 export default function CoursePlayer() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, isAdmin } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab ] = useState<'about' | 'notices' | 'notes' | 'qna' | 'bookmarks' | 'quiz'>('about');
+  const [activeTab, setActiveTab ] = useState<'about' | 'notices' | 'notes' | 'qna' | 'files' | 'quiz'>('about');
   const [completedLessons, setCompletedLessons] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLessonBookmarking, setIsLessonBookmarking] = useState<string | null>(null);
@@ -65,6 +70,9 @@ export default function CoursePlayer() {
   const [showSettings, setShowSettings] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [activeShareMenu, setActiveShareMenu] = useState(false);
+
+  const [courseStats, setCourseStats] = useState<Record<number, number>>({});
+  const [courseOverrides, setCourseOverrides] = useState<any>(null);
 
   useEffect(() => {
     if (courseId) {
@@ -77,6 +85,40 @@ export default function CoursePlayer() {
       } else {
         navigate('/courses');
       }
+      
+      const unsub = onSnapshot(doc(db, 'courseOverrides', courseId), (docSnap) => {
+        if (docSnap.exists() && foundCourse) {
+          const overrides = docSnap.data();
+          setCourseOverrides(overrides);
+          
+          let updatedCourse = { ...foundCourse };
+          if (overrides.description) {
+            updatedCourse.description = overrides.description;
+          }
+          if (overrides.notices) {
+             updatedCourse.notices = [...foundCourse.notices, ...overrides.notices];
+          }
+          if (overrides.lessons) {
+             updatedCourse.modules = foundCourse.modules.map(m => ({
+               ...m,
+               lessons: m.lessons.map(l => {
+                  const lessonOverride = overrides.lessons?.[l.id];
+                  if (lessonOverride) {
+                     return { ...l, ...lessonOverride };
+                  }
+                  return l;
+               })
+             }));
+          }
+          setCourse(updatedCourse);
+          setActiveLesson(prev => {
+             if (!prev) return prev;
+             const newLessonOverride = overrides.lessons?.[prev.id];
+             return newLessonOverride ? { ...prev, ...newLessonOverride } : prev;
+          });
+        }
+      });
+      return () => unsub();
     }
   }, [courseId, navigate]);
 
@@ -188,6 +230,50 @@ export default function CoursePlayer() {
   const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
   const progressPercent = Math.round((completedLessons.length / totalLessons) * 100);
 
+  const saveCourseOverride = async (type: 'lesson_video' | 'lesson_notes' | 'notice' | 'delete_notice' | 'description' | 'quiz', data: any) => {
+    if (!isAdmin || !courseId) return;
+    try {
+      const ref = doc(db, 'courseOverrides', courseId);
+      
+      let updatePayload: any = {};
+      const currentLessons = courseOverrides?.lessons || {};
+      const currentNotices = courseOverrides?.notices || [];
+
+      if (type === 'lesson_video' || type === 'lesson_notes' || type === 'quiz') {
+        const { lessonId, value } = data;
+        let lessonUpdate = { ...(currentLessons[lessonId] || {}) };
+        if (type === 'lesson_video') lessonUpdate.videoUrl = value;
+        if (type === 'lesson_notes') lessonUpdate.notesUrl = value;
+        if (type === 'quiz') lessonUpdate.quizQuestions = value;
+        
+        updatePayload = {
+          lessons: {
+            ...currentLessons,
+            [lessonId]: lessonUpdate
+          }
+        };
+      } else if (type === 'notice') {
+        updatePayload = {
+          notices: [...currentNotices, data]
+        };
+      } else if (type === 'delete_notice') {
+        updatePayload = {
+          notices: currentNotices.filter((n: any) => n.id !== data.id)
+        };
+      } else if (type === 'description') {
+        updatePayload = {
+          description: data.content
+        };
+      }
+
+      await setDoc(ref, updatePayload, { merge: true });
+      alert("Course updated successfully.");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to update course.");
+    }
+  };
+
   const handleLessonToggle = async (lessonId: string) => {
     if (!user || !courseId) return;
 
@@ -254,10 +340,10 @@ export default function CoursePlayer() {
               Notes
             </button>
             <button 
-              onClick={() => setActiveTab('bookmarks')}
-              className={`text-xs font-bold uppercase tracking-widest transition-colors ${activeTab === 'bookmarks' ? 'text-warning' : 'text-text-muted hover:text-text-main'}`}
+              onClick={() => setActiveTab('files')}
+              className={`text-xs font-bold uppercase tracking-widest transition-colors ${activeTab === 'files' ? 'text-warning' : 'text-text-muted hover:text-text-main'}`}
             >
-              My Bookmarks
+              Study Files
             </button>
             <button 
               onClick={() => setActiveTab('qna')}
@@ -524,18 +610,34 @@ export default function CoursePlayer() {
               />
               
               {/* Overlay elements to match the image style */}
-              <div className="absolute top-4 left-4 z-10 pointer-events-none">
+              <div className="absolute top-4 left-4 z-10 pointer-events-none flex flex-col gap-2">
                  <div className="bg-warning/90 text-crust p-2 py-1 flex items-center gap-2 rounded text-[10px] font-black uppercase tracking-widest shadow-lg">
                     <Activity size={12} />
                     Live Transmission
                  </div>
               </div>
+              
+              {isAdmin && (
+                <div className="absolute top-4 right-4 z-20">
+                  <button 
+                    onClick={() => {
+                      const newUrl = prompt("Enter new YouTube Embed URL:", activeLesson?.videoUrl);
+                      if (newUrl !== null && activeLesson) {
+                         saveCourseOverride('lesson_video', { lessonId: activeLesson.id, value: newUrl });
+                      }
+                    }}
+                    className="bg-black/80 text-warning border border-warning/50 p-2 py-1 flex items-center gap-2 rounded text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-black transition-colors backdrop-blur-md"
+                  >
+                    <Edit size={12} /> Edit Video Link
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Tabbed Content Section */}
             <div className="bg-surface/50 border border-black/10 dark:border-white/5 rounded-xl overflow-hidden backdrop-blur-md">
               <div className="flex border-b border-black/10 dark:border-white/5 overflow-x-auto scrollbar-hide snap-x">
-                 {['about', 'notices', 'notes', 'qna', 'bookmarks', 'quiz'].map((t) => (
+                 {['about', 'notices', 'notes', 'qna', 'files', 'quiz'].map((t) => (
                     <button
                       key={t}
                       onClick={() => setActiveTab(t as any)}
@@ -560,10 +662,25 @@ export default function CoursePlayer() {
                       className="space-y-6"
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-black/10 dark:border-white/5 pb-6">
-                        <div>
-                          <h4 className="text-sm font-black uppercase tracking-widest text-warning mb-2 flex items-center gap-2">
-                             <Info size={16} /> Course Description
-                          </h4>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-black uppercase tracking-widest text-warning flex items-center gap-2">
+                               <Info size={16} /> Course Description
+                            </h4>
+                            {isAdmin && (
+                              <button
+                                onClick={() => {
+                                  const desc = prompt("Edit Course Description:", course.description);
+                                  if (desc !== null) {
+                                    saveCourseOverride('description', { content: desc });
+                                  }
+                                }}
+                                className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-text-main"
+                              >
+                                <Edit size={12} /> Edit Description
+                              </button>
+                            )}
+                          </div>
                           <p className="text-text-muted leading-relaxed">
                             {course.description}
                           </p>
@@ -602,6 +719,21 @@ export default function CoursePlayer() {
                       exit={{ opacity: 0, y: -10 }}
                       className="space-y-4"
                     >
+                      {isAdmin && (
+                        <div className="flex justify-end mb-4">
+                          <button 
+                            onClick={() => {
+                              const note = prompt("Enter new announcement/notice:");
+                              if (note) {
+                                saveCourseOverride('notice', { id: Date.now(), date: new Date().toISOString().split('T')[0], content: note });
+                              }
+                            }}
+                            className="bg-warning text-crust hover:bg-warning/80 px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2"
+                          >
+                            <Plus size={14} /> Add Notice
+                          </button>
+                        </div>
+                      )}
                       {course.notices.map(notice => (
                         <div key={notice.id} className="p-6 bg-warning/5 border border-warning/10 rounded-lg relative group">
                           <div className="absolute top-0 left-0 w-1 h-full bg-warning opacity-30 group-hover:opacity-100 transition-opacity" />
@@ -610,7 +742,21 @@ export default function CoursePlayer() {
                                 <Bell size={14} className="text-warning" />
                                 <span className="text-[10px] font-black uppercase tracking-widest text-warning">Investigation Update</span>
                              </div>
-                             <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest">{notice.date}</span>
+                             <div className="flex items-center gap-4">
+                               <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest">{notice.date}</span>
+                               {isAdmin && (
+                                 <button 
+                                   onClick={() => {
+                                     if (confirm("Are you sure you want to delete this notice?")) {
+                                        saveCourseOverride('delete_notice', notice);
+                                     }
+                                   }}
+                                    className="text-red-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                 >
+                                   <Trash2 size={12} />
+                                 </button>
+                               )}
+                             </div>
                           </div>
                           <p className="text-sm text-text-muted leading-relaxed group-hover:text-text-main transition-colors">{notice.content}</p>
                         </div>
@@ -624,20 +770,50 @@ export default function CoursePlayer() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="flex flex-col h-full space-y-4"
+                      className="flex flex-col h-full space-y-8"
                     >
-                       <div className="flex items-center justify-between">
-                         <h4 className="text-sm font-black uppercase tracking-widest text-warning flex items-center gap-2">
-                            <Pencil size={16} /> My Investigation Notes
-                         </h4>
-                         <button className="bg-warning text-crust hover:bg-warning-dark px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all">
-                            Save Notes
-                         </button>
+                       <div className="bg-black/5 dark:bg-white/5 p-6 rounded-lg border border-black/10 dark:border-white/5">
+                         <div className="flex items-center justify-between mb-4">
+                           <h4 className="text-sm font-black uppercase tracking-widest text-warning flex items-center gap-2">
+                              <BookOpen size={16} /> Official Lecture Notes
+                           </h4>
+                           {isAdmin && (
+                             <button
+                               onClick={() => {
+                                 const notesLink = prompt("Enter link to official lecture notes (Google Drive, PDF, etc):", (activeLesson as any)?.notesUrl || "");
+                                 if (notesLink !== null && activeLesson) {
+                                   saveCourseOverride('lesson_notes', { lessonId: activeLesson.id, value: notesLink });
+                                 }
+                               }}
+                               className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-text-main"
+                             >
+                               <Edit size={12} /> Edit Link
+                             </button>
+                           )}
+                         </div>
+                         {((activeLesson as any)?.notesUrl) ? (
+                            <a href={(activeLesson as any).notesUrl} target="_blank" rel="noreferrer" className="text-sm text-warning hover:underline flex items-center gap-2">
+                               Download / View Notes for {activeLesson?.title}
+                            </a>
+                         ) : (
+                            <p className="text-sm text-text-muted">No official notes have been uploaded for this lesson yet.</p>
+                         )}
                        </div>
-                       <textarea 
-                         className="flex-grow min-h-[200px] bg-base/50 border border-black/10 dark:border-white/10 rounded-lg p-4 text-sm text-text-main resize-none focus:outline-none focus:border-warning/50 transition-colors"
-                         placeholder="Take notes for this module here..."
-                       ></textarea>
+
+                       <div className="flex flex-col h-full space-y-4">
+                         <div className="flex items-center justify-between">
+                           <h4 className="text-sm font-black uppercase tracking-widest text-warning flex items-center gap-2">
+                              <Pencil size={16} /> My Investigation Notes
+                           </h4>
+                           <button className="bg-warning text-crust hover:bg-warning-dark px-4 py-2 rounded text-[10px] font-black uppercase tracking-widest transition-all">
+                              Save Notes
+                           </button>
+                         </div>
+                         <textarea 
+                           className="flex-grow min-h-[200px] bg-base/50 border border-black/10 dark:border-white/10 rounded-lg p-4 text-sm text-text-main resize-none focus:outline-none focus:border-warning/50 transition-colors"
+                           placeholder="Take notes for this module here..."
+                         ></textarea>
+                       </div>
                     </motion.div>
                   )}
 
@@ -660,62 +836,42 @@ export default function CoursePlayer() {
                      </motion.div>
                   )}
 
-                  {activeTab === 'bookmarks' && (
+                  {activeTab === 'files' && (
                      <motion.div 
-                      key="bookmarks"
+                      key="files"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
                       className="space-y-4"
                      >
-                        {(() => {
-                          const bookmarks = userProfile?.lessonBookmarks?.[courseId!] || [];
-                          if (bookmarks.length === 0) {
-                            return (
-                              <div className="flex flex-col items-center justify-center p-12 text-center">
-                                <div className="w-16 h-16 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                  <Bookmark size={24} className="text-text-muted" />
-                                </div>
-                                <h4 className="text-lg font-black uppercase tracking-widest text-text-main mb-2">Investigative Bookmarks</h4>
-                                <p className="text-text-muted text-sm max-w-sm">No bookmarks found for this case file. Save important lessons for quick review.</p>
-                              </div>
-                            );
-                          }
-
-                          // Get bookmarked lesson objects
-                          const bookmarkedLessons = course.modules.flatMap(m => m.lessons.filter(l => bookmarks.includes(l.id)));
-
-                          return (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              {bookmarkedLessons.map(lesson => (
-                                <button
-                                  key={lesson.id}
-                                  onClick={() => setActiveLesson(lesson)}
-                                  className="text-left p-4 bg-surface border border-black/10 dark:border-white/5 rounded-xl hover:border-warning/30 transition-all group flex items-start gap-4"
-                                >
-                                  <div className="w-12 h-12 bg-warning/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                                    <PlayCircle size={20} className="text-warning" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <h5 className="text-[11px] font-black uppercase tracking-widest text-text-main mb-1 group-hover:text-warning transition-colors">
-                                      {lesson.title}
-                                    </h5>
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex items-center gap-1.5">
-                                        <Clock size={10} className="text-text-muted" />
-                                        <span className="text-[9px] font-bold text-text-muted uppercase tracking-tighter">{lesson.duration}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5">
-                                        <Bookmark size={10} className="text-warning" fill="currentColor" />
-                                        <span className="text-[9px] font-bold text-warning uppercase tracking-tighter">Bookmarked</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          );
-                        })()}
+                       <div className="bg-black/5 dark:bg-white/5 p-6 rounded-lg border border-black/10 dark:border-white/5">
+                         <div className="flex items-center justify-between mb-4">
+                           <h4 className="text-sm font-black uppercase tracking-widest text-warning flex items-center gap-2">
+                              <BookOpen size={16} /> Attached Study Files
+                           </h4>
+                           {isAdmin && (
+                             <button
+                               onClick={() => {
+                                 const notesLink = prompt("Enter link to related study files/notes (Google Drive, PDF, etc):", (activeLesson as any)?.notesUrl || "");
+                                 if (notesLink !== null && activeLesson) {
+                                   saveCourseOverride('lesson_notes', { lessonId: activeLesson.id, value: notesLink });
+                                 }
+                               }}
+                               className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-text-main"
+                             >
+                               <Edit size={12} /> Edit Link
+                             </button>
+                           )}
+                         </div>
+                         {((activeLesson as any)?.notesUrl) ? (
+                            <a href={(activeLesson as any).notesUrl} target="_blank" rel="noreferrer" className="text-sm text-warning hover:underline flex items-center gap-2">
+                               <FileText className="inline mr-2" size={16} />
+                               Download / View Attached Files
+                            </a>
+                         ) : (
+                            <p className="text-sm text-text-muted">No files or notes have been attached to this lecture yet.</p>
+                         )}
+                       </div>
                      </motion.div>
                   )}
                   {activeTab === 'quiz' && activeLesson && (
@@ -724,8 +880,29 @@ export default function CoursePlayer() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
+                      className="relative"
                      >
-                       <LessonQuiz courseId={courseId!} lessonId={activeLesson.id} title={activeLesson.title} />
+                       {isAdmin && (
+                         <div className="absolute top-4 right-4 z-10">
+                           <button
+                             onClick={() => {
+                               const q = prompt("Enter Quiz JSON Format: [{id: string, text: string, options: string[], correctAnswer: number, explanation: string}]");
+                               if (q !== null) {
+                                 try {
+                                   const parsed = JSON.parse(q);
+                                   saveCourseOverride('quiz', { lessonId: activeLesson.id, value: parsed });
+                                 } catch(e) {
+                                   alert("Invalid JSON format");
+                                 }
+                               }
+                             }}
+                            className="bg-black/10 hover:bg-black/20 dark:bg-white/10 dark:hover:bg-white/20 px-3 py-1.5 rounded text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 text-text-main"
+                           >
+                              <Edit size={12} /> Edit Quiz JSON
+                           </button>
+                         </div>
+                       )}
+                       <LessonQuiz courseId={courseId!} lessonId={activeLesson.id} title={activeLesson.title} questionsOverride={(activeLesson as any).quizQuestions} />
                      </motion.div>
                   )}
                 </AnimatePresence>

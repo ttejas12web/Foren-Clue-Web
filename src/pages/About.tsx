@@ -94,15 +94,6 @@ export default function About() {
       ]
     },
     {
-      name: "Grishma Biswas",
-      role: "Managing Director",
-      image: null,
-      points: [
-        "Course Instructor and Manager",
-        "Passionate Forensic Student"
-      ]
-    },
-    {
       name: "Ayush Gaikwad",
       role: "Co-Founder",
       image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLYq3YLScCtq9eKGJP1cWrqOlYe3kxV9GUbm405NlbaO7i8tYUiwbDWFHLxKfvgNZcrxgDwnIUD0bWy61B7rmz2Re3s7ytJD14XzlL-_4TyE8DNXbCTlm1AOO8-AEr7pCTKYRAqM13pabc8OA7mSwauqBd6-pq8XUoAn3yBv_tbtfb_zdKPT3R5iOFwqA/s1142/IMG-20260510-WA0011.jpg",
@@ -148,7 +139,7 @@ export default function About() {
             </li>
              <li className="flex gap-4 items-start">
               <div className="w-1.5 h-1.5 rounded-full bg-warning mt-2 shrink-0"></div>
-              <span><strong className="text-text-main">Career Advancement:</strong> Offering certifications, internships, and pathways that actively boost professional profiles.</span>
+              <span><strong className="text-text-main">Career Advancement:</strong> Offering certifications and pathways that actively boost professional profiles.</span>
             </li>
           </ul>
         </div>

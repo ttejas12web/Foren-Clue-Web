@@ -1,7 +1,6 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
-import { fileURLToPath } from 'url';
 import 'dotenv/config';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
@@ -9,11 +8,11 @@ import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const currentDir = path.dirname(__filename);
-const isProd = process.env.NODE_ENV === "production" || process.argv[1].endsWith('server.js');
-const distPath = currentDir.endsWith('dist') ? currentDir : path.join(currentDir, 'dist');
-const projectRootDir = currentDir.endsWith('dist') ? path.join(currentDir, '..') : currentDir;
+const __filename = typeof process !== 'undefined' && process.argv[1] ? process.argv[1] : '';
+const currentDir = typeof __dirname !== 'undefined' ? __dirname : (typeof process !== 'undefined' ? process.cwd() : '');
+const isProd = process.env.NODE_ENV === "production" || process.argv[1].endsWith('server.cjs');
+const distPath = path.join(process.cwd(), 'dist');
+const projectRootDir = process.cwd();
 
 // Load firebase config for server use
 let firebaseConfig: any = {};

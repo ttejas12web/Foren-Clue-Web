@@ -53,7 +53,7 @@ const GENERIC_QUESTIONS: Question[] = [
   }
 ];
 
-export function LessonQuiz({ courseId, lessonId, title }: { courseId: string, lessonId: string, title: string }) {
+export function LessonQuiz({ courseId, lessonId, title, questionsOverride }: { courseId: string, lessonId: string, title: string, questionsOverride?: Question[] }) {
   const { user, userProfile } = useAuth();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -63,7 +63,7 @@ export function LessonQuiz({ courseId, lessonId, title }: { courseId: string, le
   const [isSaving, setIsSaving] = useState(false);
   
   // Use generic questions for now. In a real app, these would be fetched per lesson.
-  const questions = GENERIC_QUESTIONS;
+  const questions = questionsOverride && questionsOverride.length > 0 ? questionsOverride : GENERIC_QUESTIONS;
   
   // Check if already completed and score is recorded
   useEffect(() => {

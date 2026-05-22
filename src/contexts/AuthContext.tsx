@@ -113,10 +113,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userRef = doc(db, 'users', user.uid);
       
       try {
-        // Try getting from cache/server first to ensure doc exists
-        const userSnap = await getDoc(userRef);
-        
-        if (!userSnap.exists()) {
+        let exists = true; // Assume exists by default to avoid overwriting if fetch fails
+        try {
+          // Try getting from cache/server first to ensure doc exists
+          const userSnap = await getDoc(userRef);
+          exists = userSnap.exists();
+        } catch (e: any) {
+          console.warn("Could not fetch initial profile, proceeding to listener:", e);
+          exists = false; // Need to create doc if no cache
+        }
+          
+        if (!exists) {
           try {
             await setDoc(userRef, {
               uid: user.uid,

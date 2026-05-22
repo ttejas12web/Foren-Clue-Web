@@ -8,7 +8,6 @@ import { Routes, Route } from 'react-router-dom';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { ScrollToTop } from './components/layout/ScrollToTop';
-import { Chatbot } from './components/ui/Chatbot';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { Loader2, WifiOff } from 'lucide-react';
@@ -105,7 +104,6 @@ export default function App() {
           } />
         </Routes>
       </Suspense>
-      <Chatbot />
     </div>
   );
 }

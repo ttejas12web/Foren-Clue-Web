@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext';
 const navLinks = [
   { name: 'Home', path: '/' },
   { name: 'Community', path: '/community' },
-  { name: 'Chat', path: '/chat' },
   { name: 'Courses', path: '/courses' },
   { name: 'Case Studies', path: '/cases' },
   { name: 'Careers', path: '/careers' },
@@ -68,7 +67,7 @@ export function Navbar() {
             className="group"
           >
             <Logo />
-            <span className="text-[9px] text-text-muted uppercase tracking-widest mt-1 block">Your Partner in Forensic Precession.</span>
+            <span className="text-[9px] text-text-muted uppercase tracking-widest mt-1 block">Your Partner in Forensic Precision.</span>
           </Link>
 
           {/* Desktop Nav */}

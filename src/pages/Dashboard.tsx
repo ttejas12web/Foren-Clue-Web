@@ -167,7 +167,7 @@ export default function Dashboard() {
                  <div className="flex gap-4 sm:gap-6 relative">
                    <div className="w-3.5 h-3.5 rounded-full bg-warning mt-1 z-10 shrink-0 shadow-[0_0_10px_rgba(var(--color-warning),0.5)]" />
                    <div>
-                     <p className="text-sm text-text-main font-bold mb-0.5">Logged into Foren Clue</p>
+                     <p className="text-sm text-text-main font-bold mb-0.5">Logged into ForenClue</p>
                      <p className="text-xs text-text-muted uppercase tracking-widest">Just now</p>
                    </div>
                  </div>

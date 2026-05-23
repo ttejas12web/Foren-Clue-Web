@@ -18,8 +18,8 @@ export default function TermsOfService() {
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">1. Acceptance of Terms</h2>
           <div className="space-y-4 relative z-10">
             <p>
-              By accessing and using Foren Clue, you accept and agree to be bound by the terms and provision of this agreement. 
-              In addition, when using Foren Clue's particular services related to forensic education, you shall be subject to any posted guidelines or rules applicable to such services.
+              By accessing and using ForenClue, you accept and agree to be bound by the terms and provision of this agreement. 
+              In addition, when using ForenClue's particular services related to forensic education, you shall be subject to any posted guidelines or rules applicable to such services.
             </p>
           </div>
         </section>
@@ -27,14 +27,14 @@ export default function TermsOfService() {
         <section className="bg-surface p-8 border border-black/10 dark:border-white/10 relative overflow-hidden">
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">2. Description of Services</h2>
           <div className="space-y-4 relative z-10">
-            <p>Foren Clue provides users with access to a rich collection of resources related to forensic science, including:</p>
+            <p>ForenClue provides users with access to a rich collection of resources related to forensic science, including:</p>
             <ul className="list-disc pl-6 space-y-2 text-text-main">
               <li>Structured educational courses ranging from beginner to advanced forensics.</li>
               <li>Interactive simulated case studies and evidence analysis tools.</li>
               <li>Community forums for discussing doubts, theories, and professional development.</li>
               <li>Career guidance and certification pathways.</li>
             </ul>
-            <p>You understand and agree that the service is provided "AS-IS" and that Foren Clue assumes no responsibility for the timeliness, deletion, mis-delivery or failure to store any user communications or personalization settings.</p>
+            <p>You understand and agree that the service is provided "AS-IS" and that ForenClue assumes no responsibility for the timeliness, deletion, mis-delivery or failure to store any user communications or personalization settings.</p>
           </div>
         </section>
 
@@ -54,7 +54,7 @@ export default function TermsOfService() {
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">4. Intellectual Property Rights</h2>
           <div className="space-y-4 relative z-10">
             <p>
-              All materials provided on Foren Clue, including but not limited to course content, videos, text, graphics, logos, images, and software, are the property of Foren Clue or its content suppliers and are protected by international copyright laws. 
+              All materials provided on ForenClue, including but not limited to course content, videos, text, graphics, logos, images, and software, are the property of ForenClue or its content suppliers and are protected by international copyright laws. 
             </p>
             <p>
               You may not reproduce, distribute, modify, create derivative works of, publicly display, publicly perform, republish, download, store, or transmit any of the material on our Site without express written consent.
@@ -67,7 +67,7 @@ export default function TermsOfService() {
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">5. Limitation of Liability</h2>
           <div className="space-y-4 relative z-10">
             <p>
-              Foren Clue operates as an educational platform. The knowledge gained here is for educational and theoretical purposes. We are not liable for how you apply this knowledge in real-world professional, legal, or personal situations. Always adhere to your local laws and professional ethical guidelines when conducting any form of investigation.
+              ForenClue operates as an educational platform. The knowledge gained here is for educational and theoretical purposes. We are not liable for how you apply this knowledge in real-world professional, legal, or personal situations. Always adhere to your local laws and professional ethical guidelines when conducting any form of investigation.
             </p>
           </div>
         </section>

@@ -50,8 +50,7 @@ export default function MyDoubts() {
       const doubtsPath = 'doubts';
       const q = query(
         collection(db, doubtsPath), 
-        where('authorId', '==', user.uid),
-        orderBy('createdAt', 'desc')
+        where('authorId', '==', user.uid)
       );
       
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -59,6 +58,13 @@ export default function MyDoubts() {
           id: doc.id,
           ...doc.data()
         })) as Doubt[];
+        
+        // Client-side sort to avoid requiring a composite index
+        docs.sort((a, b) => {
+          if (!a.createdAt || !b.createdAt) return 0;
+          return b.createdAt.toMillis() - a.createdAt.toMillis();
+        });
+        
         setDoubts(docs);
         setLoading(false);
       }, (error) => {

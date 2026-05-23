@@ -86,7 +86,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-black/10 dark:border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-text-muted">
-          <p>&copy; {new Date().getFullYear()} Foren Clue. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} ForenClue. All rights reserved.</p>
           <div className="flex gap-4">
             <Link className="border-b border-transparent hover:border-text-muted hover:text-text-main transition-all" to="/privacy">Privacy Policy</Link>
             <Link className="border-b border-transparent hover:border-text-muted hover:text-text-main transition-all" to="/terms">Terms of Service</Link>

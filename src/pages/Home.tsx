@@ -105,7 +105,7 @@ export default function Home() {
                  <EvidenceMarker number={<Star size={24} fill="currentColor" />} className="absolute -top-10 -left-6" />
                  <h2 className="font-heading font-black text-4xl mb-6">Bridge the Gap</h2>
                  <p className="text-text-muted text-lg leading-relaxed mb-6">
-                   Foren Clue is a next-generation forensic education platform designed to bridge the gap between theoretical learning and real-world forensic science applications.
+                   ForenClue is a next-generation forensic education platform designed to bridge the gap between theoretical learning and real-world forensic science applications.
                  </p>
                  <p className="text-text-muted text-lg leading-relaxed border-l-4 border-warning pl-4">
                    We provide structured courses, case studies, and career pathways tailored for aspiring forensic professionals.
@@ -159,7 +159,7 @@ export default function Home() {
                  author: "Prof. Sharma, Cyber Lead"
                },
                {
-                 quote: "Foren Clue provides a bridge between academic theory and the rigorous demands of professional investigation.",
+                 quote: "ForenClue provides a bridge between academic theory and the rigorous demands of professional investigation.",
                  author: "Ananya V., Senior Analyst"
                },
                {

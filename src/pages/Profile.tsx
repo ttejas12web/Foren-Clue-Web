@@ -46,8 +46,8 @@ export default function Profile() {
         setTargetProfile(data);
         if (isOwnProfile) {
           setForm({
-            displayName: data.displayName || '',
-            photoURL: data.photoURL || '',
+            displayName: data.displayName || user?.displayName || '',
+            photoURL: data.photoURL || user?.photoURL || '',
             mobileNumber: data.mobileNumber || '',
             universityName: data.universityName || '',
             studyingYear: data.studyingYear || '',
@@ -161,8 +161,8 @@ export default function Profile() {
                 onClick={() => isOwnProfile && setIsEditingPhoto(!isEditingPhoto)}
               >
                 <img 
-                  src={currentProfile?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${currentProfile?.displayName}`} 
-                  alt={currentProfile?.displayName || 'User'} 
+                  src={currentProfile?.photoURL || user?.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${currentProfile?.displayName || user?.displayName}`} 
+                  alt={currentProfile?.displayName || user?.displayName || 'User'} 
                   className="w-full h-full rounded-full object-cover transition-transform group-hover/avatar:scale-110" 
                 />
                 {isOwnProfile && (
@@ -172,8 +172,8 @@ export default function Profile() {
                   </div>
                 )}
               </div>
-              <h2 className="text-xl font-heading font-bold text-text-main mb-1 text-center">{currentProfile?.displayName || 'Anonymous Investigator'}</h2>
-              {isOwnProfile && <p className="text-xs text-text-muted uppercase tracking-widest mb-4">{currentProfile?.email}</p>}
+              <h2 className="text-xl font-heading font-bold text-text-main mb-1 text-center">{currentProfile?.displayName || user?.displayName || 'Anonymous Investigator'}</h2>
+              {isOwnProfile && <p className="text-xs text-text-muted uppercase tracking-widest mb-4">{currentProfile?.email || user?.email}</p>}
               
               <UserBadge 
                 doubtsCount={currentProfile?.doubtsCount || 0} 

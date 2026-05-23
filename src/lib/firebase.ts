@@ -15,7 +15,6 @@ try {
   storage = null;
 }
 export const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('https://www.googleapis.com/auth/chat');
 
 let cachedAccessToken: string | null = null;
 export const getAccessToken = () => cachedAccessToken;

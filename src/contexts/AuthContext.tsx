@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
 import { auth, googleProvider, db } from '../lib/firebase';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
 import { Fingerprint, Search, ShieldCheck, Activity } from 'lucide-react';
 
@@ -127,10 +127,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           try {
             await setDoc(userRef, {
               uid: user.uid,
-              email: user.email,
-              displayName: user.displayName,
-              photoURL: user.photoURL,
-              createdAt: new Date().toISOString(),
+              email: user.email || '',
+              displayName: user.displayName || 'Investigator',
+              photoURL: user.photoURL || '',
+              createdAt: serverTimestamp(),
               purchasedCourses: [],
               bookmarks: [],
               achievementTags: ['Forensic Novice'],
@@ -146,7 +146,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Setup real-time listener
         unsubscribeProfile = onSnapshot(userRef, (doc) => {
           if (doc.exists()) {
-            setUserProfile(doc.data() as UserProfile);
+            const data = doc.data();
+            setUserProfile({
+              ...data,
+              purchasedCourses: data.purchasedCourses || []
+            } as UserProfile);
           }
           setLoading(false);
         }, (error) => {

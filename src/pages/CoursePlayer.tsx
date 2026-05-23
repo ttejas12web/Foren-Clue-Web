@@ -58,7 +58,7 @@ import {
 export default function CoursePlayer() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { user, userProfile, isAdmin } = useAuth();
+  const { user, userProfile, isAdmin, loading } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -121,6 +121,19 @@ export default function CoursePlayer() {
       return () => unsub();
     }
   }, [courseId, navigate]);
+
+  // Security Check: Ensure user has access
+  useEffect(() => {
+    if (!loading && course && courseId) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const isJustEnrolled = searchParams.get('enrolled') === 'true';
+      const isPurchased = userProfile?.purchasedCourses?.includes(parseInt(courseId)) || isAdmin || isJustEnrolled;
+      
+      if (!isPurchased) {
+        navigate(`/courses?id=${courseId}`);
+      }
+    }
+  }, [userProfile, course, courseId, loading, isAdmin, navigate]);
 
   // Load progress from userProfile
   useEffect(() => {

@@ -18,6 +18,7 @@ export interface Course {
   price: number;
   originalPrice: number;
   level: string;
+  category: string;
   duration: string;
   description: string;
   instructorImage: string;
@@ -36,6 +37,7 @@ export const COURSES: Course[] = [
     price: 0,
     originalPrice: 1999,
     level: "Beginner",
+    category: "General Forensics",
     duration: "4 Weeks",
     description: "Learn the fundamentals of forensic science, including evidence handling, crime scene analysis, and lab techniques.",
     instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEitDO6DU6jqsjEi9qlT_F8Nnt-CURNLMWysqiQZaaBtuvQs8gTv34MFU4_EEhEAJp-_VMSheOmEWghWS0SEm21MUbS0l37WaoaLvZiqXt968mvmZ_1QHgvpbuuwHxMldrvKRfYbgtM4N-6jX88qJjnziD_OcMiPKs4jw75gcjsWy0jwaM7ARH0t-1Y4tyE/s1280/photo_6323596718204718711_y.jpg",
@@ -46,7 +48,7 @@ export const COURSES: Course[] = [
       "Chain of Custody Procedures",
       "Introduction to Forensic Laboratory Analysis"
     ],
-    instructorBio: "Mrunmayee Bodhe is the CEO Of Foren Clue Ventures, a passionate forensic enthusiast, and dedicated to making learning stress-free.",
+    instructorBio: "Mrunmayee Bodhe is the CEO Of ForenClue Ventures, a passionate forensic enthusiast, and dedicated to making learning stress-free.",
     thumbnail: "https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=800&auto=format&fit=crop",
     notices: [
       { id: 1, date: "2024-03-20", content: "New module on 'Forensic Entomology' added. Check it out in the curriculum!" },
@@ -79,6 +81,7 @@ export const COURSES: Course[] = [
     price: 100,
     originalPrice: 1999,
     level: "Beginner",
+    category: "Cyber Forensics",
     duration: "6 Weeks",
     description: "Master the art of recovering and investigating material found in digital devices.",
     instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
@@ -113,6 +116,7 @@ export const COURSES: Course[] = [
     price: 100,
     originalPrice: 2499,
     level: "Intermediate",
+    category: "Biological Science",
     duration: "5 Weeks",
     description: "Deep dive into biological evidence and DNA profiling technologies.",
     instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
@@ -145,6 +149,7 @@ export const COURSES: Course[] = [
     price: 100,
     originalPrice: 1499,
     level: "Beginner",
+    category: "Documentation",
     duration: "3 Weeks",
     description: "Essential techniques for documenting crime scenes accurately through photography.",
     instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
@@ -177,6 +182,7 @@ export const COURSES: Course[] = [
     price: 100,
     originalPrice: 2999,
     level: "Intermediate",
+    category: "Documentation",
     duration: "4 Weeks",
     description: "Learn to identify forgeries, handwriting analysis, and paper/ink comparisons.",
     instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
@@ -209,6 +215,7 @@ export const COURSES: Course[] = [
     price: 100,
     originalPrice: 3499,
     level: "Advanced",
+    category: "Anthropology",
     duration: "8 Weeks",
     description: "Specialized study of human skeletal remains to determine identity and cause of death.",
     instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",

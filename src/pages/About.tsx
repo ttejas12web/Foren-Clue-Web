@@ -75,7 +75,7 @@ export default function About() {
   const team = [
     {
       name: "Tejas Tapse",
-      role: "Founder of Foren Clue | Forensic Science Student",
+      role: "Founder of ForenClue | Forensic Science Student",
       image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
       points: [
         "Creator of Neet Cracker",
@@ -88,7 +88,7 @@ export default function About() {
       role: "Chief Executive Officer",
       image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEitDO6DU6jqsjEi9qlT_F8Nnt-CURNLMWysqiQZaaBtuvQs8gTv34MFU4_EEhEAJp-_VMSheOmEWghWS0SEm21MUbS0l37WaoaLvZiqXt968mvmZ_1QHgvpbuuwHxMldrvKRfYbgtM4N-6jX88qJjnziD_OcMiPKs4jw75gcjsWy0jwaM7ARH0t-1Y4tyE/s1280/photo_6323596718204718711_y.jpg",
       points: [
-        "CEO Of Foren Clue Ventures",
+        "CEO Of ForenClue Ventures",
         "Forensic Enthusiast",
         "Academic Counselor"
       ]
@@ -107,14 +107,14 @@ export default function About() {
     <div className="py-20 px-4 max-w-7xl mx-auto relative perspective-[2000px]">
       <div className="max-w-4xl mx-auto mb-24 text-left">
         <h1 className="text-4xl md:text-5xl font-heading font-black mb-12 uppercase tracking-tight text-center">
-          About <span className="text-warning">Foren Clue</span>
+          About <span className="text-warning">ForenClue</span>
         </h1>
         
         <div className="bg-surface p-8 border border-black/10 dark:border-white/10 mb-12 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-[50px] -z-10"></div>
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest">Our Vision</h2>
           <p className="text-lg text-text-muted leading-relaxed relative z-10">
-            At Foren Clue, we envision a future where top-tier forensic education is democratized and accessible to every passionate student. We aim to bridge the gap between theoretical knowledge and real-world application, cultivating a new generation of investigators equipped to solve the challenges of modern crime and digital forensics globally.
+            At ForenClue, we envision a future where top-tier forensic education is democratized and accessible to every passionate student. We aim to bridge the gap between theoretical knowledge and real-world application, cultivating a new generation of investigators equipped to solve the challenges of modern crime and digital forensics globally.
           </p>
         </div>
 

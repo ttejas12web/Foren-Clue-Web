@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-warning/5 rounded-full blur-[50px] -z-10"></div>
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">1. Information We Collect</h2>
           <div className="space-y-4 relative z-10">
-            <p>At Foren Clue, we collect information to provide, maintain, and improve our services, courses, and educational community features. This includes:</p>
+            <p>At ForenClue, we collect information to provide, maintain, and improve our services, courses, and educational community features. This includes:</p>
             <ul className="list-disc pl-6 space-y-2 text-text-main">
               <li><strong>Account Information:</strong> Name, email address, profile photo (if provided via Google Login), and credentials generated during registration.</li>
               <li><strong>Service & Course Data:</strong> Interaction data, progress in courses, quiz scores, certifications earned, case study participations, bookmarks, and purchased packages.</li>
@@ -30,7 +30,7 @@ export default function PrivacyPolicy() {
         <section className="bg-surface p-8 border border-black/10 dark:border-white/10 relative overflow-hidden">
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">2. How We Use Your Information</h2>
           <div className="space-y-4 relative z-10">
-            <p>Your information is used extensively to personalize your learning journey in Foren Clue. We use it to:</p>
+            <p>Your information is used extensively to personalize your learning journey in ForenClue. We use it to:</p>
             <ul className="list-disc pl-6 space-y-2 text-text-main">
               <li>Deliver our structured forensic courses, interactive case studies, and career guidance content seamlessly.</li>
               <li>Track progress and reward you with achievement badges and certifications upon milestone completions.</li>
@@ -44,9 +44,9 @@ export default function PrivacyPolicy() {
         <section className="bg-surface p-8 border border-black/10 dark:border-white/10 relative overflow-hidden">
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">3. Information Sharing and Disclosure</h2>
           <div className="space-y-4 relative z-10">
-            <p>Foren Clue holds your data in strict confidence. We do NOT sell, rent, or trade personal data to third parties. Sharing strictly occurs in the following situations:</p>
+            <p>ForenClue holds your data in strict confidence. We do NOT sell, rent, or trade personal data to third parties. Sharing strictly occurs in the following situations:</p>
             <ul className="list-disc pl-6 space-y-2 text-text-main">
-              <li><strong>Within the Community:</strong> Display names, profile icons, and public community posts (doubt threads and answers) will be open to other registered peers within the Foren Clue ecosystem.</li>
+              <li><strong>Within the Community:</strong> Display names, profile icons, and public community posts (doubt threads and answers) will be open to other registered peers within the ForenClue ecosystem.</li>
               <li><strong>Legal Compliance:</strong> If demanded by law, subpoena, or standard regulatory procedures wherein explicit handover of accounts related to illegal activity applies.</li>
               <li><strong>Trusted Providers:</strong> Hosting and infrastructure providers (like Google Firebase) operating under enterprise-grade security protocols restricted exclusively to servicing this app.</li>
             </ul>
@@ -70,7 +70,7 @@ export default function PrivacyPolicy() {
           <h2 className="text-2xl font-heading font-bold mb-4 text-warning uppercase tracking-widest relative z-10">5. Contact Us</h2>
           <div className="space-y-4 relative z-10">
             <p>
-              If you have any questions, concerns, or requests relating to privacy constraints within Foren Clue, including the handling of community interactions, forensic case studies, or related educational features, please refer to our <a href="/contact" className="text-warning hover:underline">Contact Page</a> or submit a query directly within the community parameters.
+              If you have any questions, concerns, or requests relating to privacy constraints within ForenClue, including the handling of community interactions, forensic case studies, or related educational features, please refer to our <a href="/contact" className="text-warning hover:underline">Contact Page</a> or submit a query directly within the community parameters.
             </p>
           </div>
         </section>

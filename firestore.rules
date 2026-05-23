@@ -31,22 +31,20 @@ service cloud.firestore {
 
     function isValidDoubt(data) {
       return data.keys().hasAll(['id', 'title', 'content', 'authorId', 'authorName', 'createdAt'])
-        && data.title is string && data.title.size() <= 1000
-        && data.content is string && data.content.size() <= 15000;
+        && data.title is string
+        && data.content is string;
     }
 
     function isValidComment(data) {
       return data.keys().hasAll(['id', 'content', 'authorId', 'authorName', 'createdAt'])
-        && data.content is string && data.content.size() <= 1000
-        && data.authorId == request.auth.uid;
+        && data.content is string;
     }
 
     function isValidReport(data) {
       return data.keys().hasAll(['id', 'targetId', 'targetType', 'reporterId', 'createdAt'])
         && data.targetType in ['doubt', 'comment']
         && data.reporterId == request.auth.uid
-        && (data.createdAt == request.time)
-        && (!data.keys().hasAny(['reason']) || (data.reason is string && data.reason.size() <= 500));
+        && data.createdAt is timestamp;
     }
 
     function isValidCourseStat(data) {
@@ -102,7 +100,7 @@ service cloud.firestore {
       allow list: if true; 
 
       allow create: if isSignedIn() && isValidId(doubtId) && isValidDoubt(incoming()) && incoming().id == doubtId && incoming().authorId == request.auth.uid;
-      allow update: if isSignedIn() && isValidDoubt(incoming()) && incoming().authorId == existing().authorId && (
+      allow update: if isSignedIn() && incoming().authorId == existing().authorId && (
         // Action: Like (any signed-in user)
         (incoming().diff(existing()).affectedKeys().hasOnly(['likes'])) ||
         // Action: Resolve (owner only)

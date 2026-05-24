@@ -38,7 +38,7 @@ import {
 import { COURSES, Course, Lesson, Module } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot, getDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from "@/lib/firestoreUtils";
 import { LessonQuiz } from '@/components/Quiz';
 import { 
@@ -76,14 +76,29 @@ export default function CoursePlayer() {
 
   useEffect(() => {
     if (courseId) {
-      const foundCourse = COURSES.find(c => c.id === parseInt(courseId));
-      if (foundCourse) {
+      let foundCourse = COURSES.find(c => c.id === parseInt(courseId));
+      if (!foundCourse) {
+        // Look up dynamically inside Firestore
+        getDoc(doc(db, 'courses', courseId))
+          .then((snap) => {
+            if (snap.exists()) {
+              const gotCourse = snap.data() as Course;
+              setCourse(gotCourse);
+              if (gotCourse.modules?.length > 0 && gotCourse.modules[0].lessons?.length > 0) {
+                setActiveLesson(gotCourse.modules[0].lessons[0]);
+              }
+            } else {
+              navigate('/courses');
+            }
+          })
+          .catch(() => {
+            navigate('/courses');
+          });
+      } else {
         setCourse(foundCourse);
         if (foundCourse.modules.length > 0 && foundCourse.modules[0].lessons.length > 0) {
           setActiveLesson(foundCourse.modules[0].lessons[0]);
         }
-      } else {
-        navigate('/courses');
       }
       
       const unsub = onSnapshot(doc(db, 'courseOverrides', courseId), (docSnap) => {
@@ -117,6 +132,8 @@ export default function CoursePlayer() {
              return newLessonOverride ? { ...prev, ...newLessonOverride } : prev;
           });
         }
+      }, (error) => {
+        console.warn("Could not load course overrides:", error);
       });
       return () => unsub();
     }

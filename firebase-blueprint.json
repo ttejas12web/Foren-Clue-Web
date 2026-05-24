@@ -81,9 +81,52 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["courseId", "students"]
+    },
+    "Course": {
+      "title": "Course",
+      "description": "Admin dynamically publishable courses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "integer" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "integer" }
+      },
+      "required": ["id", "title", "description", "price"]
+    },
+    "EBook": {
+      "title": "E-Book",
+      "description": "Library and reference books",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "pdfUrl": { "type": "string" }
+      },
+      "required": ["title", "pdfUrl"]
+    },
+    "WebsiteText": {
+      "title": "Website Text Copy",
+      "description": "Dynamic web copy mapped by page IDs",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" }
+      },
+      "required": ["text"]
     }
   },
   "firestore": {
+    "/courses/{courseId}": {
+      "schema": "Course",
+      "description": "Custom administrator-controlled investigation courses"
+    },
+    "/ebooks/{ebookId}": {
+      "schema": "EBook",
+      "description": "Reference eBooks listed dynamically in the library"
+    },
+    "/websiteTexts/{textId}": {
+      "schema": "WebsiteText",
+      "description": "Editable content parts on website screens"
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "Individual user profiles protected by UID"

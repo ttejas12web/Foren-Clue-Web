@@ -28,14 +28,15 @@ interface AuthContextType {
   accessToken: string | null;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  adminLogin?: (email: string, password: string) => boolean;
 }
 
-export const adminEmails = ['ayushgaikwad7050@gmail.com', 'ayushgaikwad705o@gmail.com', 'mrunmayeebodhe118@gmail.com', 'webcreator500@gmail.com'];
+export const adminEmails = ['ayushgaikwad7050@gmail.com', 'ayushgaikwad705o@gmail.com', 'mrunmayeebodhe118@gmail.com', 'webcreator500@gmail.com', 'forenclue@gmail.com'];
 
 export const checkIsAdmin = (email: string | null | undefined): boolean => {
   if (!email) return false;
   const normalized = email.trim().toLowerCase();
-  return adminEmails.some(e => e.trim().toLowerCase() === normalized) || normalized.includes('ayush');
+  return adminEmails.some(e => e.trim().toLowerCase() === normalized) || normalized.includes('ayush') || normalized.includes('forenclue');
 };
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -92,6 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [manualAdmin, setManualAdmin] = useState<{ email: string; displayName: string } | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('manualAdmin');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Auth Listener
   useEffect(() => {
@@ -203,7 +212,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [loading]);
 
-  const isAdmin = checkIsAdmin(user?.email);
+  const effectiveUser = manualAdmin 
+    ? { email: manualAdmin.email, uid: 'manual_admin', displayName: manualAdmin.displayName } as any 
+    : user;
+
+  const effectiveUserProfile = manualAdmin
+    ? {
+        uid: 'manual_admin',
+        email: manualAdmin.email,
+        displayName: manualAdmin.displayName,
+        photoURL: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150',
+        purchasedCourses: [],
+        bookmarks: [],
+        achievementTags: ['Forenclue Administrator'],
+        progress: {},
+        doubtsCount: 0,
+        commentsCount: 0
+      } as UserProfile
+    : userProfile;
+
+  const isAdmin = checkIsAdmin(effectiveUser?.email);
 
   const signInWithGoogle = async () => {
     try {
@@ -213,6 +241,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAccessToken(credential.accessToken);
       }
     } catch (error: any) {
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        console.log("Sign-in popup closed by user.");
+        return;
+      }
       console.error("Error signing in with Google: ", error);
       if (error.code === 'auth/unauthorized-domain') {
         alert(
@@ -225,16 +257,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await signOut(auth);
-      setAccessToken(null);
+      if (manualAdmin) {
+        setManualAdmin(null);
+        sessionStorage.removeItem('manualAdmin');
+      } else {
+        await signOut(auth);
+        setAccessToken(null);
+      }
     } catch (error) {
       console.error("Error signing out: ", error);
       throw error;
     }
   };
 
+  const adminLogin = (email: string, password: string): boolean => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail === 'forenclue@gmail.com' && password === 'forenclue@2025') {
+      const session = { email: 'forenclue@gmail.com', displayName: 'Forenclue Team Admin' };
+      setManualAdmin(session);
+      sessionStorage.setItem('manualAdmin', JSON.stringify(session));
+      return true;
+    }
+    return false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, loading, isAdmin, accessToken, signInWithGoogle, logout }}>
+    <AuthContext.Provider value={{ user: effectiveUser, userProfile: effectiveUserProfile, loading, isAdmin, accessToken, signInWithGoogle, logout, adminLogin }}>
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div 

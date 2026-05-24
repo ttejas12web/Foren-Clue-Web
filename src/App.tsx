@@ -26,8 +26,10 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CoursePlayer = lazy(() => import('./pages/CoursePlayer'));
 const MyDoubts = lazy(() => import('./pages/MyDoubts'));
 const Login = lazy(() => import('./pages/Login'));
+const Admin = lazy(() => import('./pages/Admin'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageLoader() {
   return (
@@ -94,6 +96,8 @@ export default function App() {
                     <Route path="/profile/:userId" element={<Profile />} />
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>
               </main>

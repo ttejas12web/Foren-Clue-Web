@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Badge, getBadgeByContributions } from '@/lib/badge-utils';
+import { Badge, getBadgeByContributions } from '../../lib/badge-utils';
 import { 
   Award, 
   ShieldCheck, 

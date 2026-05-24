@@ -1,12 +1,34 @@
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { motion } from 'motion/react';
 import { BookOpen, Clock, Heart, Activity, LayoutDashboard, ChevronRight, Play } from 'lucide-react';
-import { COURSES } from '@/constants';
+import { COURSES, Course } from '@/constants';
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 export default function Dashboard() {
   const { user, userProfile } = useAuth();
+  const [dbCourses, setDbCourses] = useState<Course[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+    const unsub = onSnapshot(collection(db, 'courses'), (snapshot) => {
+      const list: Course[] = [];
+      snapshot.forEach(docSnap => {
+        list.push({ ...docSnap.data() } as Course);
+      });
+      setDbCourses(list);
+    }, (error) => {
+      console.warn("Could not load dynamic courses for dashboard:", error);
+    });
+    return () => unsub();
+  }, [user]);
+
+  const allMergedCourses = useMemo(() => {
+    return [...COURSES, ...dbCourses];
+  }, [dbCourses]);
 
   if (!user) {
     return (
@@ -22,11 +44,11 @@ export default function Dashboard() {
     );
   }
 
-  const purchasedCourses = COURSES.filter(course => 
+  const purchasedCourses = allMergedCourses.filter(course => 
     userProfile?.purchasedCourses?.includes(course.id)
   );
 
-  const wishlistedCourses = COURSES.filter(course => 
+  const wishlistedCourses = allMergedCourses.filter(course => 
     userProfile?.progress?.wishlist?.includes(course.id)
   );
 

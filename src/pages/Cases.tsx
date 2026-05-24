@@ -53,6 +53,8 @@ export default function Cases() {
         casesData.push({ id: doc.id, ...doc.data() } as CaseFile);
       });
       setDbCases(casesData);
+    }, (error) => {
+      console.warn("Could not load dynamic cases:", error);
     });
     return () => unsubscribe();
   }, []);

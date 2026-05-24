@@ -62,14 +62,18 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  console.warn('Firestore Warning: ', JSON.stringify(errInfo));
 }
 
 export const signInWithGoogle = async () => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+      console.log("Sign-in popup closed by user.");
+      return null;
+    }
     console.error('Error signing in with Google:', error);
     throw error;
   }

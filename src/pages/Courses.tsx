@@ -6,7 +6,7 @@ import { doc, setDoc, arrayUnion, arrayRemove, serverTimestamp, updateDoc, colle
 import { handleFirestoreError, OperationType } from "@/lib/firestoreUtils";
 import { db, auth } from "@/lib/firebase";
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Loader2, CheckCircle, X, BookOpen, User, Clock, ShieldCheck, ChevronRight, Bell, Lock, Unlock, CreditCard, Share2, Heart, Twitter, MessageCircle, Copy, Play, Map, TrendingUp } from "lucide-react";
 import { COURSES, Course } from "@/constants";
 
@@ -34,17 +34,42 @@ export default function Courses() {
   const [localPurchased, setLocalPurchased] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
 
-  const categories = ['All', ...Array.from(new Set(COURSES.map(c => c.category)))];
+  const [dbCourses, setDbCourses] = useState<Course[]>([]);
+  
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'courses'), (snapshot) => {
+      const list: Course[] = [];
+      snapshot.forEach(docSnap => {
+        list.push({ ...docSnap.data() } as Course);
+      });
+      setDbCourses(list);
+    }, (error) => {
+      console.warn("Could not load dynamic courses:", error);
+    });
+    return () => unsub();
+  }, []);
 
-  const featuredCourse = COURSES.find(c => c.price === 0) || COURSES[0];
+  const allMergedCourses = useMemo(() => {
+    return [...COURSES, ...dbCourses];
+  }, [dbCourses]);
 
-  const filteredCourses = COURSES.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         course.instructor.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || course.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const categories = useMemo(() => {
+    return ['All', ...Array.from(new Set(allMergedCourses.map(c => c.category)))];
+  }, [allMergedCourses]);
+
+  const featuredCourse = useMemo(() => {
+    return allMergedCourses.find(c => c.price === 0) || allMergedCourses[0];
+  }, [allMergedCourses]);
+
+  const filteredCourses = useMemo(() => {
+    return allMergedCourses.filter(course => {
+      const matchesSearch = (course.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           (course.instructor || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           (course.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'All' || course.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [allMergedCourses, searchTerm, selectedCategory]);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'courseStats'), (snapshot) => {
@@ -62,7 +87,7 @@ export default function Courses() {
   useEffect(() => {
     const courseId = searchParams.get('id');
     if (courseId && userProfile) {
-      const course = COURSES.find(c => c.id === parseInt(courseId));
+      const course = allMergedCourses.find(c => c.id === parseInt(courseId));
       if (course) {
         if (userProfile.purchasedCourses?.includes(course.id)) {
           navigate(`/player/${course.id}`);
@@ -71,16 +96,16 @@ export default function Courses() {
         }
       }
     } else if (courseId && !loading && !user) {
-      const course = COURSES.find(c => c.id === parseInt(courseId));
+      const course = allMergedCourses.find(c => c.id === parseInt(courseId));
       if (course) setSelectedCourse(course);
     }
-  }, [searchParams, userProfile, loading, user, navigate]);
+  }, [searchParams, userProfile, loading, user, navigate, allMergedCourses]);
 
   const handlePurchase = async (courseId: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (purchasing !== null || success !== null) return;
     
-    const course = COURSES.find(c => c.id === courseId);
+    const course = allMergedCourses.find(c => c.id === courseId);
     if (!course) return;
 
     let activeUser = user;
@@ -305,7 +330,7 @@ export default function Courses() {
     if (!userProfile?.progress?.courses?.[courseId]) return 0;
     const completed = userProfile.progress.courses[courseId].completedLessons?.length || 0;
     // For simplicity, assume average of 10 lessons per course if not detailed
-    const course = COURSES.find(c => c.id === courseId);
+    const course = allMergedCourses.find(c => c.id === courseId);
     if (!course) return 0;
     const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
     return Math.min(Math.round((completed / totalLessons) * 100), 100);
@@ -462,7 +487,7 @@ export default function Courses() {
                 </div>
                 
                 <div className="space-y-6 md:space-y-0 relative">
-                  {COURSES.filter(c => c.level === level).map((course, idx) => (
+                  {allMergedCourses.filter(c => c.level === level).map((course, idx) => (
                     <div key={course.id} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 0 ? 'md:flex-row-reverse' : ''} mb-8`}>
                       <div className="w-full md:w-1/2 flex justify-center">
                         <motion.div 
@@ -500,7 +525,7 @@ export default function Courses() {
                          ) : (
                            <Lock size={20} className="text-text-muted" />
                          )}
-                         {idx < COURSES.filter(c => c.level === level).length - 1 && (
+                         {idx < allMergedCourses.filter(c => c.level === level).length - 1 && (
                            <div className="absolute top-full w-1 h-12 bg-black/10 dark:bg-white/10"></div>
                          )}
                       </div>
@@ -805,7 +830,7 @@ export default function Courses() {
               </button>
 
               {(() => {
-                const instructorCourses = COURSES.filter(c => c.instructor === selectedInstructor);
+                const instructorCourses = allMergedCourses.filter(c => c.instructor === selectedInstructor);
                 const firstCourse = instructorCourses[0];
                 return (
                   <>

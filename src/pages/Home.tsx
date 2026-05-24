@@ -3,6 +3,7 @@ import { CrimeTape } from '@/components/ui/CrimeTape';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Search, ShieldAlert, BookOpen, Users, Star } from 'lucide-react';
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
+import { EditableText } from '@/components/ui/EditableText';
 // DNAViewer removed
 
 const MotionLink = motion.create(Link);
@@ -63,8 +64,11 @@ export default function Home() {
               style={{ translateZ: 30 }}
               className="text-xl md:text-2xl font-body text-text-muted max-w-3xl mx-auto leading-relaxed mb-10"
             >
-              Empowering students, educators, and professionals with real-world forensic knowledge, 
-              case-based learning, and career guidance.
+              <EditableText 
+                id="home_hero_subtitle" 
+                defaultText="Empowering students, educators, and professionals with real-world forensic knowledge, case-based learning, and career guidance."
+                isTextArea
+              />
             </motion.p>
             
             <motion.div style={{ translateZ: 40 }} className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -105,10 +109,10 @@ export default function Home() {
                  <EvidenceMarker number={<Star size={24} fill="currentColor" />} className="absolute -top-10 -left-6" />
                  <h2 className="font-heading font-black text-4xl mb-6">Bridge the Gap</h2>
                  <p className="text-text-muted text-lg leading-relaxed mb-6">
-                   ForenClue is a next-generation forensic education platform designed to bridge the gap between theoretical learning and real-world forensic science applications.
+                   <EditableText id="home_about_par1" defaultText="ForenClue is a next-generation forensic education platform designed to bridge the gap between theoretical learning and real-world forensic science applications." isTextArea />
                  </p>
                  <p className="text-text-muted text-lg leading-relaxed border-l-4 border-warning pl-4">
-                   We provide structured courses, case studies, and career pathways tailored for aspiring forensic professionals.
+                   <EditableText id="home_about_par2" defaultText="We provide structured courses, case studies, and career pathways tailored for aspiring forensic professionals." isTextArea />
                  </p>
               </div>
             </div>

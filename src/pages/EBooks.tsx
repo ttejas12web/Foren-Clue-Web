@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BookOpen, FileText, HelpCircle, Archive, Search, Download, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 // Mock Data for demonstration
 const resources = {
@@ -40,13 +42,47 @@ const tabs = [
 export default function EBooks() {
   const [activeTab, setActiveTab] = useState('books');
   const [searchQuery, setSearchQuery] = useState('');
+  const [dbEBooks, setDbEBooks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'ebooks'), (snapshot) => {
+      const list: any[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setDbEBooks(list);
+    }, (error) => {
+      console.warn("Could not load dynamic eBooks:", error);
+    });
+    return () => unsub();
+  }, []);
+
+  const mergedBooks = [
+    ...resources.books,
+    ...dbEBooks.filter(item => item.tabCategory === 'books' || !item.tabCategory)
+  ];
+
+  const mergedNotes = [
+    ...resources.notes,
+    ...dbEBooks.filter(item => item.tabCategory === 'notes')
+  ];
+
+  const mergedPapers = [
+    ...resources.papers,
+    ...dbEBooks.filter(item => item.tabCategory === 'papers')
+  ];
+
+  const mergedOther = [
+    ...resources.other,
+    ...dbEBooks.filter(item => item.tabCategory === 'other')
+  ];
 
   // Function to filter items based on search query
   const getFilteredItems = (items: any[]) => {
     if (!searchQuery) return items;
     const lowerQuery = searchQuery.toLowerCase();
     return items.filter(item => 
-      item.title.toLowerCase().includes(lowerQuery) || 
+      (item.title || '').toLowerCase().includes(lowerQuery) || 
       (item.author && item.author.toLowerCase().includes(lowerQuery)) ||
       (item.category && item.category.toLowerCase().includes(lowerQuery))
     );
@@ -131,8 +167,8 @@ export default function EBooks() {
                 transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {getFilteredItems(resources.books).length > 0 ? (
-                  getFilteredItems(resources.books).map((book) => (
+                {getFilteredItems(mergedBooks).length > 0 ? (
+                  getFilteredItems(mergedBooks).map((book) => (
                     <ResourceCard key={book.id} item={book} icon={BookOpen} />
                   ))
                 ) : (
@@ -150,8 +186,8 @@ export default function EBooks() {
                 transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {getFilteredItems(resources.notes).length > 0 ? (
-                  getFilteredItems(resources.notes).map((note) => (
+                {getFilteredItems(mergedNotes).length > 0 ? (
+                  getFilteredItems(mergedNotes).map((note) => (
                     <ResourceCard key={note.id} item={note} icon={FileText} />
                   ))
                 ) : (
@@ -169,8 +205,8 @@ export default function EBooks() {
                 transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {getFilteredItems(resources.papers).length > 0 ? (
-                  getFilteredItems(resources.papers).map((paper) => (
+                {getFilteredItems(mergedPapers).length > 0 ? (
+                  getFilteredItems(mergedPapers).map((paper) => (
                     <ResourceCard key={paper.id} item={paper} icon={HelpCircle} />
                   ))
                 ) : (
@@ -188,8 +224,8 @@ export default function EBooks() {
                 transition={{ duration: 0.2 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 lg:gap-6"
               >
-                {getFilteredItems(resources.other).length > 0 ? (
-                  getFilteredItems(resources.other).map((item) => (
+                {getFilteredItems(mergedOther).length > 0 ? (
+                  getFilteredItems(mergedOther).map((item) => (
                     <ResourceCard key={item.id} item={item} icon={Archive} />
                   ))
                 ) : (
@@ -206,8 +242,28 @@ export default function EBooks() {
 }
 
 function ResourceCard({ item, icon: Icon }: { item: any, icon: any }) {
+  const handleDownload = () => {
+    if (item.pdfUrl) {
+      window.open(item.pdfUrl, '_blank');
+    } else {
+      alert("This document's source file is only an archive preview. Downloads require an upgraded verification key.");
+    }
+  };
+
   return (
     <div className="bg-surface border border-black/10 dark:border-white/5 rounded-xl p-6 hover:border-warning/30 transition-colors group flex flex-col h-full">
+      {/* Book Image Cover section */}
+      {(item.image || item.coverImage) && (
+        <div className="h-44 w-full relative overflow-hidden bg-black/10 dark:bg-white/5 rounded-lg mb-4 flex items-center justify-center p-2 border border-black/5 dark:border-white/5">
+          <img 
+            src={item.image || item.coverImage} 
+            alt={item.title} 
+            className="max-h-full object-contain rounded shadow-lg group-hover:scale-105 transition-transform duration-500" 
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      )}
+
       <div className="flex items-start justify-between mb-4">
         <div className="p-3 bg-black/5 dark:bg-white/5 rounded-lg text-text-main group-hover:text-warning group-hover:bg-warning/10 transition-colors">
           <Icon className="w-6 h-6" />
@@ -241,11 +297,18 @@ function ResourceCard({ item, icon: Icon }: { item: any, icon: any }) {
       </div>
 
       <div className="pt-4 border-t border-black/10 dark:border-white/5 flex gap-3 mt-auto">
-        <button className="flex-1 flex items-center justify-center gap-2 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/5 dark:bg-white/10 rounded-lg text-text-main text-sm font-medium transition-colors">
+        <button 
+          onClick={handleDownload}
+          className="flex-1 flex items-center justify-center gap-2 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-text-main text-sm font-medium transition-colors"
+        >
           <Download className="w-4 h-4" />
           Download
         </button>
-        <button className="px-4 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/5 dark:bg-white/10 rounded-lg text-text-muted hover:text-text-main transition-colors" title="Open in new tab">
+        <button 
+          onClick={handleDownload}
+          className="px-4 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-text-muted hover:text-text-main transition-colors" 
+          title="Open in new tab"
+        >
           <ExternalLink className="w-4 h-4" />
         </button>
       </div>

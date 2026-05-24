@@ -643,6 +643,8 @@ export function PostCard({
           comments: data.commentsCount || 0 
         });
       }
+    }, (error) => {
+      console.warn("Could not load author stats in DoubtCard:", error);
     });
 
     return () => {
@@ -1194,6 +1196,8 @@ function CommentItem({ comment, isAuthor, onDelete, onReport, isDeleting }: { co
           comments: data.commentsCount || 0 
         });
       }
+    }, (error) => {
+      console.warn("Could not load author stats in CommentItem:", error);
     });
     return () => unsubscribeAuthor();
   }, [comment.authorId]);

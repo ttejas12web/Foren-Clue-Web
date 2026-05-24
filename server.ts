@@ -10,8 +10,8 @@ import fs from 'fs';
 
 const __filename = typeof process !== 'undefined' && process.argv[1] ? process.argv[1] : '';
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : (typeof process !== 'undefined' ? process.cwd() : '');
-const isProd = process.env.NODE_ENV === "production" || process.argv[1].endsWith('server.cjs');
-const buildPath = path.join(process.cwd(), 'build');
+const isProd = process.env.NODE_ENV === "production";
+const buildPath = path.join(process.cwd(), 'dist');
 const projectRootDir = process.cwd();
 
 // Load firebase config for server use

@@ -11,7 +11,7 @@ import fs from 'fs';
 const __filename = typeof process !== 'undefined' && process.argv[1] ? process.argv[1] : '';
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : (typeof process !== 'undefined' ? process.cwd() : '');
 const isProd = process.env.NODE_ENV === "production" || process.argv[1].endsWith('server.cjs');
-const distPath = path.join(process.cwd(), 'dist');
+const buildPath = path.join(process.cwd(), 'build');
 const projectRootDir = process.cwd();
 
 // Load firebase config for server use
@@ -150,9 +150,9 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(distPath));
+    app.use(express.static(buildPath));
     app.get('*', (req, res) => {
-      const indexPath = path.join(distPath, 'index.html');
+      const indexPath = path.join(buildPath, 'index.html');
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
       } else {

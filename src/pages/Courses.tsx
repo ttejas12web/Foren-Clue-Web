@@ -361,135 +361,12 @@ export default function Courses() {
   return (
     <div className="py-20 px-4 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-8">
-        <div className="text-left md:w-1/2">
+        <div className="text-left w-full">
           <h1 className="text-4xl md:text-6xl font-heading font-black mb-4 uppercase tracking-tight relative z-10">
             Explore <span className="text-warning">Courses</span>
           </h1>
           <p className="text-xl text-text-muted relative z-10 mb-6">Get Started With Our Most Structured Courses</p>
-          <div className="relative z-10 max-w-sm mb-6">
-            <input 
-              type="text" 
-              placeholder="Search by title, instructor, or topic..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-surface border border-black/10 dark:border-white/10 rounded-md py-3 pl-4 pr-10 text-sm md:text-base focus:border-warning/50 focus:outline-none transition-colors"
-            />
-          </div>
-          <div className="flex flex-wrap gap-4 relative z-10">
-            <button 
-              onClick={() => setViewMode('grid')}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-colors flex items-center gap-2 ${viewMode === 'grid' ? 'bg-warning text-crust' : 'bg-surface/50 text-text-muted hover:bg-surface'}`}
-            >
-              <BookOpen size={16} /> All Courses
-            </button>
-            <button 
-              onClick={() => setViewMode('path')}
-              className={`px-4 py-2 text-xs font-bold uppercase tracking-widest rounded transition-colors flex items-center gap-2 ${viewMode === 'path' ? 'bg-warning text-crust' : 'bg-surface/50 text-text-muted hover:bg-surface'}`}
-            >
-              <TrendingUp size={16} /> Learning Path
-            </button>
-          </div>
         </div>
-        <div className="md:w-1/2 h-[300px] md:h-[400px] w-full relative z-0">
-          <div className="absolute inset-0 left-0 right-0 top-0 bottom-0 pointer-events-auto">
-             <MicroscopeViewer />
-          </div>
-        </div>
-      </div>
-
-      {/* Featured Course Section */}
-      {!searchTerm && selectedCategory === 'All' && viewMode === 'grid' && (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-16 relative z-10 p-1 group cursor-pointer"
-          onClick={() => setSelectedCourse(featuredCourse)}
-        >
-          <div className="bg-surface border border-warning/30 rounded-2xl overflow-hidden flex flex-col md:flex-row relative shadow-[0_0_50px_rgba(0,0,0,0.3)]">
-            <div className="absolute top-0 right-0 p-4 z-20">
-              <span className="px-4 py-1 bg-warning text-crust text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg animate-pulse">Featured Program</span>
-            </div>
-            
-            <div className="md:w-1/2 h-64 md:h-auto relative overflow-hidden">
-              <img src={featuredCourse.thumbnail} alt={featuredCourse.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
-              <div className="absolute inset-0 bg-gradient-to-r from-surface via-transparent to-transparent hidden md:block"></div>
-              <div className="absolute inset-0 bg-base/20 group-hover:bg-warning/10 transition-colors"></div>
-            </div>
-            
-            <div className="md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
-              <span className="text-warning text-xs font-black uppercase tracking-[0.3em] mb-4">{featuredCourse.category} • {featuredCourse.level}</span>
-              <h2 className="text-3xl md:text-5xl font-heading font-black mb-6 uppercase tracking-tight leading-none group-hover:text-warning transition-colors">
-                {featuredCourse.title}
-              </h2>
-              <p className="text-text-muted text-lg mb-8 leading-relaxed line-clamp-3">
-                {featuredCourse.description}
-              </p>
-              
-              <div className="flex items-center gap-8 mb-8">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1 text-center">Duration</span>
-                  <span className="text-sm font-bold text-text-main flex items-center gap-2"><Clock size={16} /> {featuredCourse.duration}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1 text-center">Students</span>
-                  <span className="text-sm font-bold text-text-main flex items-center gap-2"><User size={16} /> {courseStats[featuredCourse.id] || '1k'}+ Enrolled</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-muted mb-1 text-center">Status</span>
-                  <span className="text-sm font-bold text-success flex items-center gap-2"><CheckCircle size={16} /> Enrollment Open</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                {isPurchased(featuredCourse.id) ? (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); navigate(`/player/${featuredCourse.id}`); }}
-                    className="px-8 py-4 bg-warning text-crust font-black uppercase tracking-widest rounded transition-all hover:scale-105 shadow-[0_4px_20px_rgba(0,240,255,0.4)] flex items-center gap-2"
-                  >
-                     <Play fill="currentColor" size={20} /> Go to Course
-                  </button>
-                ) : (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handlePurchase(featuredCourse.id, e); }}
-                    disabled={purchasing === featuredCourse.id || success === featuredCourse.id}
-                    className="px-8 py-4 bg-warning text-crust font-black uppercase tracking-widest rounded transition-all hover:scale-105 shadow-[0_4px_20px_rgba(0,240,255,0.4)] disabled:opacity-50"
-                  >
-                     {purchasing === featuredCourse.id ? (
-                       <><Loader2 size={18} className="animate-spin inline mr-2" /> Processing...</>
-                     ) : success === featuredCourse.id ? (
-                       <><CheckCircle size={18} className="inline mr-2" /> Success!</>
-                     ) : (
-                       "Start Your Journey"
-                     )}
-                  </button>
-                )}
-                <div className="flex -space-x-3">
-                  {[1,2,3,4].map(i => (
-                    <img key={i} src={`https://i.pravatar.cc/100?u=${i + featuredCourse.id}`} className="w-10 h-10 rounded-full border-2 border-surface ring-2 ring-warning/20" alt="Student" />
-                  ))}
-                  <div className="w-10 h-10 rounded-full bg-surface border-2 border-surface ring-2 ring-warning/20 flex items-center justify-center text-[10px] font-bold text-warning">+12</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Category Tabs */}
-      <div className="flex flex-wrap items-center gap-2 mb-8 relative z-10 overflow-x-auto pb-4 scrollbar-hide">
-        {categories.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border ${
-              selectedCategory === cat 
-                ? 'bg-warning text-crust border-warning shadow-[0_0_15px_rgba(0,240,255,0.3)]' 
-                : 'bg-surface/50 text-text-muted border-black/10 dark:border-white/10 hover:border-warning/30'
-            }`}
-          >
-            {cat}
-          </button>
-        ))}
       </div>
 
       {searchTerm && (
@@ -507,187 +384,51 @@ export default function Courses() {
               {filteredCourses.map((course, idx) => (
                 <motion.div 
                   key={course.id} 
-                  whileHover={{ y: -8, scale: 1.01 }}
+                  whileHover={{ y: -4, scale: 1.01 }}
                   onClick={() => setSelectedCourse(course)}
-                  className="bg-surface border border-black/10 dark:border-white/5 overflow-hidden group hover:border-warning/30 transition-colors relative flex flex-col shadow-2xl cursor-pointer"
+                  className="bg-surface border border-black/10 dark:border-white/5 overflow-hidden group hover:border-black/20 dark:hover:border-white/10 transition-colors flex flex-col shadow-sm rounded-xl cursor-pointer"
                 >
-                  {/* Status & Actions Badge */}
-                  <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
-              <div className="relative">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setActiveShareMenu(activeShareMenu === course.id ? null : course.id); }}
-                  className="p-2 bg-surface/90 text-text-muted border border-black/10 dark:border-white/5 hover:text-warning hover:border-warning/30 transition-all rounded shadow-lg flex items-center justify-center"
-                  title="Share Case"
-                >
-                  <Share2 size={12} />
-                </button>
-                
-                <AnimatePresence>
-                  {activeShareMenu === course.id && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 top-full mt-2 bg-base border border-black/10 dark:border-white/10 rounded-lg shadow-2xl p-2 z-50 flex flex-col gap-1 min-w-[120px]"
-                    >
+                  <div className="h-48 relative overflow-hidden bg-black/5 dark:bg-white/5">
+                    <img 
+                      src={course.thumbnail} 
+                      alt={course.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute top-3 right-3 flex gap-2">
                       <button 
-                        onClick={(e) => handleSocialShare(course, 'twitter', e)}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-black/5 dark:bg-white/5 rounded text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-main transition-colors"
+                        onClick={(e) => toggleWishlist(course.id, e)}
+                        className="p-2 bg-base/80 backdrop-blur-md rounded-full shadow-sm text-text-muted hover:text-warning transition-colors"
                       >
-                        <Twitter size={12} className="text-blue-400" />
-                        Twitter
+                        <Heart size={16} fill={isWishlisted(course.id) ? "currentColor" : "none"} className={isWishlisted(course.id) ? "text-warning" : ""} />
                       </button>
-                      <button 
-                        onClick={(e) => handleSocialShare(course, 'whatsapp', e)}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-black/5 dark:bg-white/5 rounded text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-main transition-colors"
-                      >
-                        <MessageCircle size={12} className="text-green-400" />
-                        WhatsApp
-                      </button>
-                      <button 
-                        onClick={(e) => handleSocialShare(course, 'copy', e)}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-black/5 dark:bg-white/5 rounded text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-main transition-colors"
-                      >
-                        <Copy size={12} className="text-warning" />
-                        Copy Link
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <button 
-                onClick={(e) => toggleWishlist(course.id, e)}
-                disabled={isBookmarking === course.id}
-                className={`p-2 bg-surface/90 border border-black/10 dark:border-white/5 transition-all rounded shadow-lg flex items-center justify-center ${isWishlisted(course.id) ? 'text-warning border-warning/30' : 'text-text-muted hover:text-warning hover:border-warning/30'}`}
-                title={isWishlisted(course.id) ? "Remove from Wishlist" : "Add to Wishlist"}
-              >
-                {isBookmarking === course.id ? (
-                  <Loader2 size={12} className="animate-spin" />
-                ) : (
-                  <Heart size={12} fill={isWishlisted(course.id) ? "currentColor" : "none"} />
-                )}
-              </button>
-
-              <div className={`flex items-center gap-2 px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-lg ${isPurchased(course.id) ? 'bg-success text-text-main' : 'bg-surface/90 text-warning border border-warning/30'}`}>
-                {isPurchased(course.id) ? (
-                  <>
-                    <Unlock size={10} />
-                    Access Unlocked
-                  </>
-                ) : (
-                  <>
-                    <Lock size={10} />
-                    Course Locked
-                  </>
-                )}
-              </div>
-            </div>
-
-            <EvidenceMarker number={idx + 1 < 10 ? `0${idx + 1}` : idx + 1} className="absolute top-4 left-4 scale-75 z-20 group-hover:rotate-6 transition-transform" />
-
-            <div className="h-48 bg-black relative overflow-hidden">
-              <img 
-                src={course.thumbnail} 
-                alt={course.title} 
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-                referrerPolicy="no-referrer"
-              />
-              <div className="absolute inset-0 bg-base/40 group-hover:bg-warning/10 transition-colors z-10" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
-                <span className="font-heading font-black text-6xl rotate-[-20deg]">FORENSICS</span>
-              </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setPreviewVideo(course.modules[0]?.lessons[0]?.videoUrl); }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-warning/80 backdrop-blur-sm flex items-center justify-center text-crust opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-[0_0_20px_rgba(0,240,255,0.5)] z-20"
-              >
-                <Play size={24} fill="currentColor" className="ml-1" />
-              </button>
-            </div>
-            <div className="p-6 flex-grow flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-warning mb-1">{course.category}</span>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-text-muted">{course.level}</span>
-                </div>
-                <div className="flex items-center gap-4 text-[10px] text-text-muted font-bold uppercase tracking-widest">
-                  <span className="flex items-center gap-1"><Clock size={12} /> {course.duration}</span>
-                </div>
-              </div>
-              <h3 className="font-heading font-bold text-xl mb-2 group-hover:text-warning transition-colors leading-tight">{course.title}</h3>
-              <p className="text-sm text-text-muted mb-6 flex-grow line-clamp-2">
-                {course.description}
-              </p>
-              
-              <div className="mt-auto">
-                {isPurchased(course.id) && (
-                  <div className="mb-6">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">Investigation Progress</span>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-warning">{getCourseProgress(course.id)}%</span>
-                    </div>
-                    <div className="h-1 w-full bg-black/10 dark:bg-white/10 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full bg-warning transition-all duration-1000 ease-out" 
-                        style={{ width: `${getCourseProgress(course.id)}%` }}
-                      />
                     </div>
                   </div>
-                )}
-
-                <div className="flex items-center justify-between mb-4">
-                  <div 
-                    className="flex items-center gap-2 cursor-pointer group/instructor"
-                    onClick={(e) => { e.stopPropagation(); setSelectedInstructor(course.instructor); }}
-                  >
-                    <div className="w-8 h-8 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden ring-2 ring-transparent group-hover/instructor:ring-warning/50 transition-all">
-                      <img src={course.instructorImage} alt={course.instructor} className="w-full h-full object-cover group-hover/instructor:scale-110 transition-transform" />
+                  
+                  <div className="p-5 flex-grow flex flex-col bg-surface">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-warning">{course.category} • {course.level}</span>
+                      <span className="text-xs text-text-muted flex items-center gap-1"><Clock size={12} /> {course.duration}</span>
                     </div>
-                    <span className="text-sm font-medium text-text-muted group-hover/instructor:text-warning transition-colors">{course.instructor}</span>
+                    
+                    <h3 className="font-heading font-bold text-lg mb-2 leading-tight text-text-main line-clamp-1">{course.title}</h3>
+                    <p className="text-sm text-text-muted mb-4 line-clamp-2">{course.description}</p>
+                    
+                    <div className="mt-auto pt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <img src={course.instructorImage} alt={course.instructor} className="w-6 h-6 rounded-full object-cover" />
+                        <span className="text-xs text-text-muted font-medium">{course.instructor}</span>
+                      </div>
+                      <div className="font-bold">
+                        {course.price === 0 ? (
+                          <span className="text-success text-sm">FREE</span>
+                        ) : (
+                          <span className="text-text-main text-sm">{course.price} INR</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end justify-center">
-                    {course.price === 0 ? (
-                      <span className="text-3xl font-heading font-black text-warning drop-shadow-[0_0_15px_rgba(0,240,255,0.8)] animate-pulse tracking-widest bg-warning/10 px-4 py-1 rounded-sm border border-warning/50">FREE</span>
-                    ) : (
-                      <>
-                        <span className="text-lg font-heading font-black text-warning">{course.price} INR</span>
-                        <span className="text-[10px] text-text-muted line-through">{course.originalPrice} INR</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {isPurchased(course.id) ? (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); navigate(`/player/${course.id}`); }}
-                    className="w-full py-3 bg-black/5 dark:bg-white/10 text-text-main font-bold tracking-wide rounded-md hover:bg-black/5 dark:bg-white/20 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle size={18} className="text-success" />
-                    Go to Course
-                  </button>
-                ) : (
-                  <button 
-                    onClick={(e) => handlePurchase(course.id, e)}
-                    disabled={purchasing === course.id || success === course.id}
-                    className="w-full py-3 bg-warning text-crust font-bold tracking-wide rounded-md hover:bg-warning/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-75"
-                  >
-                    {purchasing === course.id ? (
-                      <><Loader2 size={18} className="animate-spin" /> Processing...</>
-                    ) : success === course.id ? (
-                      <><CheckCircle size={18} /> Success!</>
-                    ) : course.price === 0 ? (
-                      "Enroll for Free"
-                    ) : (
-                      "Buy Now"
-                    )}
-                  </button>
-                )}
-                <div className="text-center mt-3">
-                   <span className="text-[10px] font-black uppercase tracking-widest text-text-muted group-hover:text-warning transition-colors">Click to View Details</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+                </motion.div>
         ))}
       </div>
       ) : (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   MessageSquare, 
@@ -34,10 +34,10 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage, OperationType, handleFirestoreError } from '@/lib/firebase';
-import { compressImage } from '@/lib/image-utils';
+import { db, storage, OperationType, handleFirestoreError } from '../lib/firebase';
+import { compressImage } from '../lib/image-utils';
 import { Link, useNavigate } from 'react-router-dom';
-import { UserBadge, UserBadgeCompact } from '@/components/ui/UserBadge';
+import { UserBadge, UserBadgeCompact } from '../components/ui/UserBadge';
 
 interface Comment {
   id: string;
@@ -72,6 +72,20 @@ const FORENSIC_CATEGORIES = [
   "Toxicology"
 ];
 
+const handleFileChange = (
+  file: File, 
+  setFileState: (f: File | null) => void, 
+  setPreviewState: (s: string | null) => void
+) => {
+  if (!file) return;
+  setFileState(file);
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    setPreviewState(reader.result as string);
+  };
+  reader.readAsDataURL(file);
+};
+
 export default function Community() {
   const { user, userProfile } = useAuth();
   const navigate = useNavigate();
@@ -90,6 +104,8 @@ export default function Community() {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newCategory, setNewCategory] = useState(FORENSIC_CATEGORIES[0]);
+  const [newImageFile, setNewImageFile] = useState<File | null>(null);
+  const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
 
   const handlePostDoubtClick = () => {
     if (!user) {
@@ -130,14 +146,40 @@ export default function Community() {
 
     setIsPosting(true);
     setPostError(null);
-    setPostingStatus('Filing case...');
+    setPostingStatus('Preparing case file...');
 
     try {
       console.log("Creating doubtRef...");
       const doubtRef = doc(collection(db, 'doubts'));
       const id = doubtRef.id;
+
+      let imageUrl = '';
+      if (newImageFile) {
+        setPostingStatus('Analyzing evidence...');
+        const compressedBlob = await compressImage(newImageFile, 800, 0.6);
+        
+        try {
+          if (storage) {
+            setPostingStatus('Uploading evidence...');
+            const fileRef = ref(storage, `doubts/${id}/evidence-${Date.now()}.jpg`);
+            const snapshot = await uploadBytes(fileRef, compressedBlob);
+            imageUrl = await getDownloadURL(snapshot.ref);
+          } else {
+            throw new Error('Storage not initialized');
+          }
+        } catch (storageErr) {
+          console.warn("Storage upload failed, fallback to base64:", storageErr);
+          setPostingStatus('Encoding evidence...');
+          const reader = new FileReader();
+          imageUrl = await new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(compressedBlob);
+          });
+        }
+      }
       
       console.log("Setting document data...");
+      setPostingStatus('Filing case details...');
       await setDoc(doubtRef, {
         id,
         title: newTitle,
@@ -148,7 +190,8 @@ export default function Community() {
         authorPhoto: userProfile?.photoURL || user.photoURL || '',
         createdAt: serverTimestamp(),
         likes: [],
-        resolved: false
+        resolved: false,
+        ...(imageUrl ? { imageUrl } : {})
       });
       console.log("Document created successfully.");
 
@@ -166,6 +209,8 @@ export default function Community() {
       setNewTitle('');
       setNewContent('');
       setNewCategory(FORENSIC_CATEGORIES[0]);
+      setNewImageFile(null);
+      setNewImagePreview(null);
       setShowCreateModal(false);
     } catch (error: any) {
       console.error('Error creating post:', error);
@@ -459,6 +504,59 @@ export default function Community() {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-warning mb-2 ml-1">Attach Forensic Evidence (Optional)</label>
+                  
+                  {newImagePreview ? (
+                    <div className="relative rounded-lg overflow-hidden border border-warning/30 bg-base p-2">
+                      <img src={newImagePreview} alt="Evidence Preview" className="w-full h-48 object-contain rounded mx-auto" />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setNewImageFile(null);
+                          setNewImagePreview(null);
+                        }}
+                        className="absolute top-4 right-4 bg-error text-white p-2 rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div 
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          handleFileChange(e.dataTransfer.files[0], setNewImageFile, setNewImagePreview);
+                        }
+                      }}
+                      className="border-2 border-dashed border-black/20 dark:border-white/10 rounded-lg p-6 text-center hover:border-warning/50 hover:bg-warning/5 cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+                      onClick={() => {
+                        const fileInput = document.getElementById('new-evidence-upload');
+                        fileInput?.click();
+                      }}
+                    >
+                      <ImageIcon className="text-text-muted group-hover:text-warning transition-colors" size={28} />
+                      <div className="text-xs text-text-main font-bold">
+                        <span>Drag & Drop files or </span>
+                        <span className="text-warning group-hover:underline">Browse</span>
+                      </div>
+                      <p className="text-[10px] text-text-muted uppercase tracking-wider">Supports JPEG, PNG up to 5MB</p>
+                      <input 
+                        id="new-evidence-upload"
+                        type="file" 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            handleFileChange(e.target.files[0], setNewImageFile, setNewImagePreview);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 {postError && (
                   <div className="p-4 bg-error/10 border border-error/20 rounded-lg text-error text-xs font-bold uppercase tracking-widest text-center">
                     {postError}
@@ -515,6 +613,18 @@ export function PostCard({
   const [commentsCount, setCommentsCount] = useState(0);
   const [authorStats, setAuthorStats] = useState({ doubts: 0, comments: 0 });
 
+  // Inline editing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(doubt.title);
+  const [editContent, setEditContent] = useState(doubt.content);
+  const [editCategory, setEditCategory] = useState(doubt.category || FORENSIC_CATEGORIES[0]);
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(doubt.imageUrl || null);
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(doubt.imageUrl || null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editStatus, setEditStatus] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
   useEffect(() => {
     const path = `doubts/${doubt.id}/comments`;
     const q = query(collection(db, 'doubts', doubt.id, 'comments'));
@@ -547,6 +657,62 @@ export function PostCard({
     return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   };
 
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editTitle || !editContent) return;
+
+    setIsSavingEdit(true);
+    setEditError(null);
+    setEditStatus('Filing update...');
+
+    try {
+      let finalImageUrl = editImageUrl || '';
+      
+      if (editImageFile) {
+        setEditStatus('Analyzing updated evidence...');
+        const compressedBlob = await compressImage(editImageFile, 800, 0.6);
+        
+        try {
+          if (storage) {
+            setEditStatus('Uploading updated evidence...');
+            const fileRef = ref(storage, `doubts/${doubt.id}/evidence-${Date.now()}.jpg`);
+            const snapshot = await uploadBytes(fileRef, compressedBlob);
+            finalImageUrl = await getDownloadURL(snapshot.ref);
+          } else {
+            throw new Error('Storage unavailable');
+          }
+        } catch (storageErr) {
+          console.warn("Storage upload failed, fallback to base64 in update:", storageErr);
+          setEditStatus('Encoding base64...');
+          const reader = new FileReader();
+          finalImageUrl = await new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(compressedBlob);
+          });
+        }
+      } else if (!editImagePreview) {
+        // User explicitly cleared the evidence image
+        finalImageUrl = '';
+      }
+
+      await updateDoc(doc(db, 'doubts', doubt.id), {
+        title: editTitle,
+        content: editContent,
+        category: editCategory,
+        imageUrl: finalImageUrl,
+        updatedAt: serverTimestamp()
+      });
+
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error("Failed to save edit:", err);
+      setEditError(err.message || "Failed to update case file.");
+    } finally {
+      setIsSavingEdit(false);
+      setEditStatus(null);
+    }
+  };
+
   return (
     <motion.article 
       initial={{ opacity: 0, y: 10 }}
@@ -556,152 +722,317 @@ export function PostCard({
       }`}
     >
       <div className="p-6 md:p-8">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link to={`/profile/${doubt.authorId}`} className="relative group/avatar">
-              <div className="w-12 h-12 rounded-full border-2 border-warning/20 p-0.5 overflow-hidden">
-                <img 
-                  src={doubt.authorPhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${doubt.authorName}`} 
-                  alt={doubt.authorName} 
-                  className="w-full h-full rounded-full object-cover grayscale group-hover/avatar:grayscale-0 transition-all"
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 z-10">
-                <UserBadgeCompact doubtsCount={authorStats.doubts} commentsCount={authorStats.comments} />
-              </div>
-            </Link>
-            <div>
-              <div className="flex items-center gap-2">
-                <Link to={`/profile/${doubt.authorId}`} className="font-heading font-black text-text-main hover:text-warning transition-colors uppercase tracking-widest text-sm">
-                  {doubt.authorName}
-                </Link>
-                <UserBadge doubtsCount={authorStats.doubts} commentsCount={authorStats.comments} size="xs" showLabel={false} />
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Calendar size={12} className="text-text-muted" />
-                <span className="text-[10px] text-text-muted font-bold uppercase tracking-tighter">{formatDate(doubt.createdAt)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {!isOwner && (
+        {isEditing ? (
+          <form onSubmit={handleSaveEdit} className="space-y-6">
+            <div className="flex items-center justify-between border-b border-black/10 dark:border-white/5 pb-4">
+              <h4 className="text-lg font-heading font-black uppercase text-warning tracking-wider">Update Query / Case File</h4>
               <button 
-                onClick={onReport}
-                className="p-2 text-text-muted hover:text-warning transition-colors"
-                title="Report Content"
-              >
-                <Flag size={18} />
-              </button>
-            )}
-            {isOwner && (
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete();
+                type="button" 
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditTitle(doubt.title);
+                  setEditContent(doubt.content);
+                  setEditCategory(doubt.category || FORENSIC_CATEGORIES[0]);
+                  setEditImageFile(null);
+                  setEditImagePreview(doubt.imageUrl || null);
+                  setEditImageUrl(doubt.imageUrl || null);
+                  setEditError(null);
                 }}
-                disabled={isDeleting}
-                className="flex items-center gap-2 px-3 py-1.5 border border-error/20 bg-error/5 text-error hover:bg-error/10 rounded-lg transition-all disabled:opacity-50 group/del"
-                title="Delete Case Permanently"
+                className="text-text-muted hover:text-text-main transition-colors text-xs font-bold uppercase tracking-widest"
               >
-                {isDeleting ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
+                Cancel
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-warning mb-2">Case Title / Topic</label>
+              <input 
+                type="text"
+                required
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full bg-base border border-black/10 dark:border-white/10 rounded-lg py-3 px-4 text-text-main focus:border-warning/50 focus:outline-none transition-colors text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-warning mb-2">Category</label>
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                className="w-full bg-base border border-black/10 dark:border-white/10 rounded-lg py-3 px-4 text-text-main focus:border-warning/50 focus:outline-none transition-colors appearance-none text-sm"
+                style={{ backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22%2F%3E%3C%2Fsvg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1rem top 50%', backgroundSize: '0.65rem auto' }}
+              >
+                {FORENSIC_CATEGORIES.map(cat => (
+                  <option key={cat} value={cat} className="bg-base">{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-warning mb-2">Evidence Details / Doubt</label>
+              <textarea 
+                required
+                rows={4}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                className="w-full bg-base border border-black/10 dark:border-white/10 rounded-lg py-3 px-4 text-text-main text-sm resize-none focus:border-warning/50 focus:outline-none transition-colors"
+                placeholder="State details..."
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-warning mb-2">Evidence Photo (Optional)</label>
+              
+              {editImagePreview ? (
+                <div className="relative rounded-lg overflow-hidden border border-warning/30 bg-base p-2">
+                  <img src={editImagePreview} alt="Evidence Preview" className="w-full h-48 object-contain rounded mx-auto" />
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setEditImageFile(null);
+                      setEditImagePreview(null);
+                      setEditImageUrl(null);
+                    }}
+                    className="absolute top-4 right-4 bg-error text-white p-2 rounded-full hover:scale-110 active:scale-95 transition-all shadow-lg"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      handleFileChange(e.dataTransfer.files[0], setEditImageFile, setEditImagePreview);
+                    }
+                  }}
+                  className="border-2 border-dashed border-black/20 dark:border-white/10 rounded-lg p-6 text-center hover:border-warning/50 hover:bg-warning/5 cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+                  onClick={() => {
+                    const fileInput = document.getElementById(`edit-evidence-upload-${doubt.id}`);
+                    fileInput?.click();
+                  }}
+                >
+                  <ImageIcon className="text-text-muted group-hover:text-warning transition-colors" size={28} />
+                  <div className="text-xs text-text-main font-bold">
+                    <span>Drag & Drop files or </span>
+                    <span className="text-warning group-hover:underline">Browse</span>
+                  </div>
+                  <p className="text-[10px] text-text-muted uppercase tracking-wider">Supports JPEG, PNG up to 5MB</p>
+                  <input 
+                    id={`edit-evidence-upload-${doubt.id}`}
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileChange(e.target.files[0], setEditImageFile, setEditImagePreview);
+                      }
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {editError && (
+              <div className="p-3 bg-error/10 border border-error/20 rounded-lg text-error text-xs font-bold uppercase tracking-widest text-center">
+                {editError}
+              </div>
+            )}
+
+            <div className="flex gap-4 pt-2">
+              <button 
+                type="submit"
+                disabled={isSavingEdit}
+                className="flex-1 bg-warning text-crust font-black uppercase tracking-widest py-3.5 rounded-lg hover:bg-warning-dark transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-xs"
+              >
+                {isSavingEdit ? (
                   <>
-                    <Trash2 size={16} />
-                    <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Delete Case</span>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{editStatus || 'Saving...'}</span>
                   </>
+                ) : (
+                  <>Save Changes</>
                 )}
               </button>
-            )}
-            <button className="p-2 text-text-muted hover:text-text-main transition-colors">
-              <MoreVertical size={18} />
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <h3 className="text-2xl md:text-3xl font-heading font-black text-text-main uppercase tracking-tight leading-tight group-hover:text-warning transition-colors">
-              {doubt.title}
-            </h3>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            {doubt.category && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[10px] font-bold uppercase tracking-widest text-text-muted">
-                <Tag size={12} strokeWidth={2.5} />
-                {doubt.category}
-              </span>
-            )}
-            {doubt.imageUrl && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/10 border border-warning/20 text-[10px] font-black uppercase tracking-widest text-warning shadow-sm shadow-warning/10">
-                <ImageIcon size={12} strokeWidth={3} />
-                Evidence
-              </span>
-            )}
-            {doubt.resolved && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-[10px] font-black uppercase tracking-widest text-green-400">
-                <CheckCircle size={12} strokeWidth={3} />
-                Resolved
-              </span>
-            )}
-          </div>
-          
-          <p className="text-text-muted text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-            {doubt.content}
-          </p>
-        </div>
-
-        {doubt.imageUrl && (
-          <div className="mb-6 mt-4 rounded-xl overflow-hidden border border-black/10 dark:border-white/5 relative bg-base shadow-inner">
-            <img 
-              src={doubt.imageUrl} 
-              alt="Evidence" 
-              className="w-full h-auto max-h-[500px] object-contain mx-auto" 
-              referrerPolicy="no-referrer"
-            />
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-6 border-t border-black/10 dark:border-white/5 mt-4">
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={onLike}
-              className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${
-                doubt.likes?.includes(currentUserId || '') ? 'text-red-500' : 'text-text-muted hover:text-text-main'
-              }`}
-            >
-              <Heart size={16} strokeWidth={doubt.likes?.includes(currentUserId || '') ? 3 : 2} className={doubt.likes?.includes(currentUserId || '') ? 'fill-current' : ''} />
-              {doubt.likes?.length || 0}
-            </button>
-            <button 
-              onClick={() => setShowComments(!showComments)}
-              className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${
-                showComments ? 'text-warning' : 'text-text-muted hover:text-text-main'
-              }`}
-            >
-              <MessageSquare size={16} strokeWidth={showComments ? 3 : 2} />
-              {commentsCount} Responses
-            </button>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {isOwner && (
               <button 
-                onClick={onResolve}
-                className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
-                  doubt.resolved ? 'text-green-500 hover:text-text-main' : 'text-text-muted hover:text-green-500'
-                }`}
+                type="button"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditTitle(doubt.title);
+                  setEditContent(doubt.content);
+                  setEditCategory(doubt.category || FORENSIC_CATEGORIES[0]);
+                  setEditImageFile(null);
+                  setEditImagePreview(doubt.imageUrl || null);
+                  setEditImageUrl(doubt.imageUrl || null);
+                  setEditError(null);
+                }}
+                className="flex-1 bg-black/15 dark:bg-white/5 border border-black/10 dark:border-white/10 text-text-main font-black uppercase tracking-widest py-3.5 rounded-lg hover:bg-black/25 dark:hover:bg-white/10 transition-colors text-xs"
               >
-                {doubt.resolved ? 'Reopen Case' : 'Mark Resolved'}
+                Cancel
               </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <Link to={`/profile/${doubt.authorId}`} className="relative group/avatar">
+                  <div className="w-12 h-12 rounded-full border-2 border-warning/20 p-0.5 overflow-hidden">
+                    <img 
+                      src={doubt.authorPhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${doubt.authorName}`} 
+                      alt={doubt.authorName} 
+                      className="w-full h-full rounded-full object-cover grayscale group-hover/avatar:grayscale-0 transition-all"
+                    />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 z-10">
+                    <UserBadgeCompact doubtsCount={authorStats.doubts} commentsCount={authorStats.comments} />
+                  </div>
+                </Link>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Link to={`/profile/${doubt.authorId}`} className="font-heading font-black text-text-main hover:text-warning transition-colors uppercase tracking-widest text-sm">
+                      {doubt.authorName}
+                    </Link>
+                    <UserBadge doubtsCount={authorStats.doubts} commentsCount={authorStats.comments} size="xs" showLabel={false} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Calendar size={12} className="text-text-muted" />
+                    <span className="text-[10px] text-text-muted font-bold uppercase tracking-tighter">{formatDate(doubt.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {!isOwner && (
+                  <button 
+                    onClick={onReport}
+                    className="p-2 text-text-muted hover:text-warning transition-colors"
+                    title="Report Content"
+                  >
+                    <Flag size={18} />
+                  </button>
+                )}
+                {isOwner && (
+                  <>
+                    <button 
+                      onClick={() => setIsEditing(true)}
+                      className="flex items-center gap-2 px-3 py-1.5 border border-warning/20 bg-warning/5 text-warning hover:bg-warning/10 rounded-lg transition-all"
+                      title="Edit Case details"
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-widest">Edit</span>
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                      }}
+                      disabled={isDeleting}
+                      className="flex items-center gap-2 px-3 py-1.5 border border-error/20 bg-error/5 text-error hover:bg-error/10 rounded-lg transition-all disabled:opacity-50 group/del"
+                      title="Delete Case Permanently"
+                    >
+                      {isDeleting ? (
+                        <Loader2 size={16} className="animate-spin" />
+                      ) : (
+                        <>
+                          <Trash2 size={16} />
+                          <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Delete</span>
+                        </>
+                      )}
+                    </button>
+                  </>
+                )}
+                <button className="p-2 text-text-muted hover:text-text-main transition-colors">
+                  <MoreVertical size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <h3 className="text-2xl md:text-3xl font-heading font-black text-text-main uppercase tracking-tight leading-tight group-hover:text-warning transition-colors">
+                  {doubt.title}
+                </h3>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                {doubt.category && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-[10px] font-bold uppercase tracking-widest text-text-muted">
+                    <Tag size={12} strokeWidth={2.5} />
+                    {doubt.category}
+                  </span>
+                )}
+                {doubt.imageUrl && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning/10 border border-warning/20 text-[10px] font-black uppercase tracking-widest text-warning shadow-sm shadow-warning/10">
+                    <ImageIcon size={12} strokeWidth={3} />
+                    Evidence
+                  </span>
+                )}
+                {doubt.resolved && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-[10px] font-black uppercase tracking-widest text-green-400">
+                    <CheckCircle size={12} strokeWidth={3} />
+                    Resolved
+                  </span>
+                )}
+              </div>
+              
+              <p className="text-text-muted text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                {doubt.content}
+              </p>
+            </div>
+
+            {doubt.imageUrl && (
+              <div className="mb-6 mt-4 rounded-xl overflow-hidden border border-black/10 dark:border-white/5 relative bg-base shadow-inner">
+                <img 
+                  src={doubt.imageUrl} 
+                  alt="Evidence" 
+                  className="w-full h-auto max-h-[500px] object-contain mx-auto animate-fade-in" 
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             )}
-            <button className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted hover:text-warning transition-colors">
-              Share
-            </button>
-          </div>
-        </div>
+
+            <div className="flex items-center justify-between pt-6 border-t border-black/10 dark:border-white/5 mt-4">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => onLike && onLike()}
+                  className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${
+                    doubt.likes?.includes(currentUserId || '') ? 'text-red-500' : 'text-text-muted hover:text-text-main'
+                  }`}
+                >
+                  <Heart size={16} strokeWidth={doubt.likes?.includes(currentUserId || '') ? 3 : 2} className={doubt.likes?.includes(currentUserId || '') ? 'fill-current' : ''} />
+                  {doubt.likes?.length || 0}
+                </button>
+                <button 
+                  onClick={() => setShowComments(!showComments)}
+                  className={`flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${
+                    showComments ? 'text-warning' : 'text-text-muted hover:text-text-main'
+                  }`}
+                >
+                  <MessageSquare size={16} strokeWidth={showComments ? 3 : 2} />
+                  {commentsCount} Responses
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-4">
+                {isOwner && onResolve && (
+                  <button 
+                    onClick={() => onResolve && onResolve()}
+                    className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${
+                      doubt.resolved ? 'text-green-500 hover:text-text-main' : 'text-text-muted hover:text-green-500'
+                    }`}
+                  >
+                    {doubt.resolved ? 'Reopen Case' : 'Mark Resolved'}
+                  </button>
+                )}
+                <button className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted hover:text-warning transition-colors">
+                  Share
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
       <AnimatePresence>

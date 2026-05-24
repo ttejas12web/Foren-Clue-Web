@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'motion/react';
 import { 
   MessageSquare, 
@@ -19,7 +19,7 @@ import {
   setDoc,
   serverTimestamp 
 } from 'firebase/firestore';
-import { db, OperationType, handleFirestoreError } from '@/lib/firebase';
+import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Link, useNavigate } from 'react-router-dom';
 import { PostCard } from './Community';
 

@@ -8,7 +8,7 @@ import {
   Trophy, BookOpen, Edit, Trash2, Plus
 } from 'lucide-react';
 import Markdown from 'react-markdown';
-import { useAuth, adminEmails } from '@/contexts/AuthContext';
+import { useAuth, checkIsAdmin } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { CaseEditorModal } from '@/components/ui/CaseEditorModal';
@@ -60,7 +60,7 @@ export default function Cases() {
   const filteredArchive = useMemo(() => {
     const allCases = [...dbCases].filter(c => {
        // Only keep files published by admins
-       if (!c.createdBy || !adminEmails.some(e => e.trim().toLowerCase() === c.createdBy!.trim().toLowerCase())) return false;
+       if (!c.createdBy || !checkIsAdmin(c.createdBy)) return false;
        // user can see published, or admin can see all
        return c.status !== 'draft' || isAdmin;
     });

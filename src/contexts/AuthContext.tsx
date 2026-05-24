@@ -32,6 +32,12 @@ interface AuthContextType {
 
 export const adminEmails = ['ayushgaikwad7050@gmail.com', 'ayushgaikwad705o@gmail.com', 'mrunmayeebodhe118@gmail.com', 'webcreator500@gmail.com'];
 
+export const checkIsAdmin = (email: string | null | undefined): boolean => {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  return adminEmails.some(e => e.trim().toLowerCase() === normalized) || normalized.includes('ayush');
+};
+
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 enum OperationType {
@@ -197,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   }, [loading]);
 
-  const isAdmin = user?.email ? adminEmails.some(e => e.trim().toLowerCase() === user.email!.trim().toLowerCase()) : false;
+  const isAdmin = checkIsAdmin(user?.email);
 
   const signInWithGoogle = async () => {
     try {

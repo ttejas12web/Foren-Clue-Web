@@ -5,6 +5,48 @@ import { db, storage } from '@/lib/firebase';
 import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// Converts a single Google Drive sharing URL to a direct viewable image link
+export function convertGDriveUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.includes('drive.google.com')) {
+    let fileId = '';
+    
+    // Pattern 1: /file/d/FILE_ID/view or /file/d/FILE_ID/preview
+    const dMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (dMatch && dMatch[1]) {
+      fileId = dMatch[1];
+    } else {
+      // Pattern 2: ?id=FILE_ID or &id=FILE_ID
+      const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) {
+        fileId = idMatch[1];
+      }
+    }
+    
+    if (fileId) {
+      return `https://docs.google.com/uc?export=view&id=${fileId}`;
+    }
+  }
+  return trimmed;
+}
+
+// Replaces all Google Drive links inside a text block (like the details markdown input)
+export function convertGDriveUrlsInText(text: string | null | undefined): string {
+  if (!text) return '';
+  
+  // Regex to match any variant of Google Drive links
+  const gdriveRegex = /https:\/\/drive\.google\.com\/(?:file\/d\/([a-zA-Z0-9_-]+)(?:\/[^\s\)]*)?|open\?(?:[^\s\)]*&)?id=([a-zA-Z0-9_-]+)[^\s\)]*)/g;
+  
+  return text.replace(gdriveRegex, (match, id1, id2) => {
+    const fileId = id1 || id2;
+    if (fileId) {
+      return `https://docs.google.com/uc?export=view&id=${fileId}`;
+    }
+    return match;
+  });
+}
+
 interface CaseEditorModalProps {
   onClose: () => void;
   caseToEdit?: any; // the case to edit, or null/undefined if creating new
@@ -97,12 +139,12 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
     setLoading(true);
 
     try {
-      let mainImageUrl = existingImage;
+      let mainImageUrl = convertGDriveUrl(existingImage);
       if (imageFile) {
         mainImageUrl = await uploadFile(imageFile, `cases/${Date.now()}_${imageFile.name}`);
       }
 
-      let uploadedContentImages = [...contentImages];
+      let uploadedContentImages = contentImages.map(url => convertGDriveUrl(url));
       for (const file of newContentImageFiles) {
         const url = await uploadFile(file, `cases/content/${Date.now()}_${file.name}`);
         uploadedContentImages.push(url);
@@ -114,8 +156,11 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
         uploadedAttachments.push(url);
       }
 
+      const convertedDetails = convertGDriveUrlsInText(formData.details);
+
       const caseData = {
         ...formData,
+        details: convertedDetails,
         evidenceLabels: formData.evidenceLabels.split(',').map((s: string) => s.trim()).filter(Boolean),
         forensicTechniques: formData.forensicTechniques.split(',').map((s: string) => s.trim()).filter(Boolean),
         image: mainImageUrl || 'https://images.unsplash.com/photo-1542382257-80dedb725088?auto=format&fit=crop&q=80&w=1000',
@@ -205,8 +250,9 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
               </select>
             </div>
             <div>
-               <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Main Image (Upload or Link)</label>
-               <input type="text" value={existingImage} onChange={(e) => setExistingImage(e.target.value)} placeholder="Paste image link here (e.g., GDrive, Imgur)" className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none mb-2" />
+               <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Main Image / Thumbnail (Upload or Link)</label>
+               <input type="text" value={existingImage} onChange={(e) => setExistingImage(e.target.value)} placeholder="Paste image link/GDrive link here..." className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none mb-1" />
+               <p className="text-[10px] text-text-muted mb-2 font-mono">Supports Google Drive sharing links (auto-converts to direct image)!</p>
                <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm text-text-muted file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-warning/10 file:text-warning hover:file:bg-warning/20" />
                {imageFile && <div className="mt-2 text-xs text-green-500">File selected: {imageFile.name} (Will override link)</div>}
             </div>
@@ -218,8 +264,11 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Details (Markdown supported)</label>
-            <textarea required name="details" value={formData.details} onChange={handleChange} rows={8} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none custom-scrollbar font-mono" />
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-xs font-bold text-text-muted uppercase">Details (Markdown supported)</label>
+              <span className="text-[10px] text-warning font-mono">Google Drive sharing links are auto-converted!</span>
+            </div>
+            <textarea required name="details" value={formData.details} onChange={handleChange} rows={8} className="w-full bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none custom-scrollbar font-mono" placeholder="State the details... Use markdown `![image](gdrive_sharing_url)` to embed inline photos!" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -236,11 +285,12 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
           <div>
              <label className="block text-xs font-bold text-text-muted mb-2 uppercase">Gallery Images (Upload or Links)</label>
              <div className="flex gap-2 mb-2">
-               <input type="text" id="galleryLinkInput" placeholder="Paste image link here" className="flex-1 bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" />
+               <input type="text" id="galleryLinkInput" placeholder="Paste image/GDrive link here" className="flex-1 bg-crust border border-white/10 rounded-lg p-3 text-sm focus:border-warning outline-none" />
                <button type="button" onClick={() => {
                  const el = document.getElementById('galleryLinkInput') as HTMLInputElement;
                  if (el && el.value) {
-                   setContentImages(prev => [...prev, el.value]);
+                   const converted = convertGDriveUrl(el.value);
+                   setContentImages(prev => [...prev, converted]);
                    el.value = '';
                  }
                }} className="bg-warning/20 text-warning px-4 rounded-lg text-sm font-bold">Add Link</button>

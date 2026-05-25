@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, useMotionValue, useTransform } from 'motion/react';
 import { CrimeTape } from '@/components/ui/CrimeTape';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Search, ShieldAlert, BookOpen, Users, Star, Download } from 'lucide-react';
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
 import { EditableText } from '@/components/ui/EditableText';
@@ -18,6 +18,21 @@ export default function Home() {
 
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [isJoined, setIsJoined] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const scrollTarget = searchParams.get('scroll');
+    if (scrollTarget === 'book-mockup') {
+      const element = document.getElementById('book-mockup-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Clean up the search parameter so it doesn't scroll again on manual reloads
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('scroll');
+        setSearchParams(newParams, { replace: true });
+      }
+    }
+  }, [searchParams, setSearchParams]);
 
   function handleMouseMove(event: React.MouseEvent<HTMLElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -115,12 +130,13 @@ The ForenClue Curriculum Board
             </motion.h1>
             <motion.p 
               style={{ translateZ: 30 }}
-              className="text-xl md:text-2xl font-body text-text-muted max-w-3xl mx-auto leading-relaxed mb-10"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl font-body text-text-muted max-w-3xl mx-auto leading-relaxed mb-10 text-center px-4"
             >
               <EditableText 
                 id="home_hero_subtitle" 
                 defaultText="Empowering students, educators, and professionals with real-world forensic knowledge, case-based learning, and career guidance."
                 isTextArea
+                className="text-center"
               />
             </motion.p>
             
@@ -197,7 +213,7 @@ The ForenClue Curriculum Board
       </section>
 
       {/* Exclusive Forensic Handbook / Book Section */}
-      <section className="py-24 bg-base relative overflow-hidden border-t border-black/10 dark:border-white/5">
+      <section id="book-mockup-section" className="py-24 bg-base relative overflow-hidden border-t border-black/10 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             

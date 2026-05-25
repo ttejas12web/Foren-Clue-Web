@@ -1,6 +1,8 @@
+import { useNavigate } from "react-router-dom";
 import { DNAViewer } from "@/components/ui/ThreeDElement";
 
 export default function Careers() {
+  const navigate = useNavigate();
   const paths = [
     "Crime Scene Investigator",
     "Forensic Analyst",
@@ -48,7 +50,10 @@ export default function Careers() {
             <div className="bg-warning text-crust p-8 shadow-xl">
               <h3 className="text-xl font-heading font-black mb-4 uppercase">Carrier RoadMap Handbook</h3>
               <p className="mb-6 opacity-80 text-sm font-medium">Download our comprehensive guide to mastering the required skills.</p>
-              <button className="w-full py-3 bg-crust text-warning font-black uppercase tracking-wider text-sm hover:opacity-90 transition-opacity">
+              <button 
+                onClick={() => navigate('/?scroll=book-mockup')}
+                className="w-full py-3 bg-crust text-warning font-black uppercase tracking-wider text-sm hover:opacity-90 transition-opacity cursor-pointer"
+              >
                 Get Roadmap
               </button>
             </div>

@@ -100,6 +100,14 @@ export default function About() {
       points: [
         "Forensic Science Student"
       ]
+    },
+    {
+      name: "Sarth Mokashe",
+      role: "CTO (chief technology officer)",
+      image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjBOD-MYdx8QLRJS5661FjsUWiJhE32YCEx_iL2c_GNKokQMOTwPp33kITBOmAiYNC7Ts32Y-0vMbLARycBesex9MiXce4lddvzBtTMceMrbCOX90EE-ogSVoGOebV4pJiIY6avW5JKbCA2n2EUPutGRzF3biG_oBRKPEf3tb78h_izZU8ZvN2DT7AvC5g/s1429/D7139389-0F3C-4CF7-A6EB-78FB8834BEA1.png",
+      points: [
+        "Chief Technology Officer"
+      ]
     }
   ];
 

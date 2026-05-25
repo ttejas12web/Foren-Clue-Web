@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useTransform } from 'motion/react';
 import { CrimeTape } from '@/components/ui/CrimeTape';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Search, ShieldAlert, BookOpen, Users, Star } from 'lucide-react';
+import { ArrowRight, Search, ShieldAlert, BookOpen, Users, Star, Download } from 'lucide-react';
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
 import { EditableText } from '@/components/ui/EditableText';
 // DNAViewer removed
@@ -27,6 +27,55 @@ export default function Home() {
     x.set(0);
     y.set(0);
   }
+
+  const handleDownloadSample = () => {
+    const content = `======================================================================
+FORENCLUE SCIENTIFIC EXAMINATION HANDBOOK (PREVIEW CLASSROOM PACKET)
+======================================================================
+ForenClue Publications Ltd. | www.forenclue.edu
+Classification: Exclusive Forensic Blueprint Sample
+Document Reference: FEP-2026-HBK-001X
+
+Dear forensic student/educator,
+
+Thank you for downloading the exclusive sample chapter from the upcoming
+"Forensic Investigation Handbook: Theory, Application & Protocols".
+
+Here is a quick operational checklist included in Chapter 2:
+
+SECTION 2.4: SYSTEMATIC CRIME SCENE PROTOCOLS
+----------------------------------------------
+1. Establish Boundary Control
+   - Define Outer, Inner, and Core security perimeters.
+   - Deploy high-contrast physical barriers (Crime Scene Tape).
+   - Authorize Entry/Exit logging to secure chain of custody.
+
+2. Comprehensive Photography & Documentation
+   - Take overall room context shots before introducing evidence markers.
+   - Utilize linear measurement grids and macro exposure for specific trace materials.
+   - Implement stereoscopic capture for reconstruction algorithms.
+
+3. Live Sample Retention
+   - Always wear double-layered nitrile gloves. Use separate tweezers for distinct hairs.
+   - Place biological trace materials only into well-aerated paper bags to prevent humidity-based mold decomposition.
+   - Package volatile digital storage hardware immediately into anti-static Faraday shielding.
+
+Find complete lessons, certifications, and active community doubts folders
+on ForenClue platform!
+
+Keep Investigating,
+The ForenClue Curriculum Board
+======================================================================`;
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ForenClue_Forensic_Investigation_Handbook_Sample.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -137,6 +186,60 @@ export default function Home() {
                   <p className="text-sm text-text-muted">{feature.desc}</p>
                 </motion.div>
               ))}
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* Exclusive Forensic Handbook / Book Section */}
+      <section className="py-24 bg-base relative overflow-hidden border-t border-black/10 dark:border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            {/* Book Mockup & Download Block (12 cols) */}
+            <div className="lg:col-span-12 flex flex-col items-center justify-center">
+              {/* Coming Soon Tag */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-warning/15 border border-warning/30 rounded-full text-warning text-xs font-black uppercase tracking-widest mb-6 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-warning animate-ping" />
+                Coming Soon
+              </div>
+
+              <div className="relative group max-w-sm w-full">
+                {/* Subtle Ambient Glow */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-warning to-amber-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+                
+                <div className="relative bg-surface border border-black/10 dark:border-white/5 p-6 rounded-2xl shadow-2xl flex flex-col items-center text-center animate-fadeIn">
+                  {/* Book Image */}
+                  <div className="relative overflow-hidden rounded-xl border border-black/10 dark:border-white/10 aspect-[3/4] w-full max-w-[280px] mb-6 shadow-xl transition-all duration-500 group-hover:scale-105">
+                    <img 
+                      src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEive7NdnBis_kLLqaN2d8q37014tEMd2ftmqFkeCIiLjxkG2sDfip5VQldxh9izJC-KTsD4ZfXnILFWEOG2jmJkwdKww8-jqW-2jAqpTsv4AOE47MkqpHHibGcBN4GhPqN3OIF1xxIbs0KQLRgxfk2XJRsdlQyY_JqqRnajm2-pB1xoiZN4BnkdtDc9ICU/s1500/1779707899.png" 
+                      alt="Forensic Investigation Handbook Cover" 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute top-3 right-3 bg-warning text-crust text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-lg">
+                      Exclusive Preview
+                    </div>
+                  </div>
+
+                  {/* Title / Description under book */}
+                  <h3 className="font-heading font-black text-lg mb-1 uppercase tracking-tight text-text-main">
+                    Forensic Blueprint Sample Chapter
+                  </h3>
+                  <p className="text-[11px] font-mono text-text-muted mb-4 uppercase tracking-widest">
+                    PDF Document • 4.2 MB • ForenClue Publications
+                  </p>
+
+                  {/* Download Button */}
+                  <button 
+                    onClick={handleDownloadSample}
+                    className="w-full sm:w-auto px-6 py-3 bg-warning hover:bg-warning-dark text-crust font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs shadow-lg hover:shadow-warning/20 cursor-pointer active:scale-95"
+                  >
+                    <Download size={14} className="animate-bounce" /> Download Preview PDF
+                  </button>
+                </div>
+              </div>
             </div>
 
           </div>

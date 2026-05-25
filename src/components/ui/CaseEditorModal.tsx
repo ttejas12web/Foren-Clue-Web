@@ -72,7 +72,15 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [existingImage, setExistingImage] = useState(caseToEdit?.image || '');
-  const [contentImages, setContentImages] = useState<string[]>(caseToEdit?.contentImages || []);
+  const [contentImages, setContentImages] = useState<{ url: string; caption: string }[]>(() => {
+    if (!caseToEdit?.contentImages) return [];
+    return caseToEdit.contentImages.map((img: any) => {
+      if (typeof img === 'string') {
+        return { url: img, caption: '' };
+      }
+      return { url: img?.url || '', caption: img?.caption || '' };
+    });
+  });
   const [newContentImageFiles, setNewContentImageFiles] = useState<File[]>([]);
   const [attachments, setAttachments] = useState<string[]>(caseToEdit?.attachments || []);
   const [newAttachmentFiles, setNewAttachmentFiles] = useState<File[]>([]);
@@ -145,10 +153,15 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
         mainImageUrl = await uploadFile(imageFile, `cases/${Date.now()}_${imageFile.name}`);
       }
 
-      let uploadedContentImages = contentImages.map(url => convertGDriveUrl(url));
+      let uploadedContentImages = contentImages.map(img => ({
+        url: convertGDriveUrl(img.url),
+        caption: img.caption || ''
+      }));
       for (const file of newContentImageFiles) {
         const url = await uploadFile(file, `cases/content/${Date.now()}_${file.name}`);
-        uploadedContentImages.push(url);
+        const cleanName = file.name.split('.').slice(0, -1).join('.').replace(/[_-]/g, ' ');
+        const autoCaption = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+        uploadedContentImages.push({ url, caption: autoCaption });
       }
 
       let uploadedAttachments = [...attachments];
@@ -291,23 +304,47 @@ export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorMo
                  const el = document.getElementById('galleryLinkInput') as HTMLInputElement;
                  if (el && el.value) {
                    const converted = convertGDriveUrl(el.value);
-                   setContentImages(prev => [...prev, converted]);
+                   setContentImages(prev => [...prev, { url: converted, caption: '' }]);
                    el.value = '';
                  }
                }} className="bg-warning/20 text-warning px-4 rounded-lg text-sm font-bold">Add Link</button>
              </div>
-             <input type="file" accept="image/*" multiple onChange={handleContentImagesUpload} className="w-full text-sm text-text-muted mb-2 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-warning/10 file:text-warning hover:file:bg-warning/20" />
-             <div className="flex gap-2 flex-wrap">
+             <input type="file" accept="image/*" multiple onChange={handleContentImagesUpload} className="w-full text-sm text-text-muted mb-4 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-warning/10 file:text-warning hover:file:bg-warning/20" />
+             
+             <div className="space-y-3 max-h-72 overflow-y-auto p-2 bg-crust rounded-xl border border-white/10 custom-scrollbar mb-4">
                {contentImages.map((img, i) => (
-                  <div key={i} className="relative group">
-                    <img src={img} className="w-16 h-16 object-cover rounded shadow" alt="gallery" />
-                    <button type="button" onClick={() => setContentImages(contentImages.filter((_, idx) => idx !== i))} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <X size={12}/>
+                  <div key={i} className="flex gap-4 p-3 bg-surface border border-white/10 rounded-xl relative group items-center">
+                    <img src={img.url} className="w-16 h-16 object-cover rounded-lg border border-white/15 shrink-0" alt="gallery thumbnail" />
+                    <div className="flex-1 min-w-0">
+                      <label className="block text-[9px] font-mono uppercase tracking-wider text-text-muted mb-1">Image Address / Link</label>
+                      <span className="text-[10px] font-mono text-text-main block truncate pr-8">{img.url}</span>
+                      
+                      <label className="block text-[9px] font-mono uppercase tracking-wider text-text-muted mt-2 mb-1 font-bold">Dossier Caption</label>
+                      <input 
+                        type="text" 
+                        value={img.caption || ''} 
+                        placeholder="Enter brief caption describing this evidence image..."
+                        onChange={(e) => {
+                          const updatedCaption = e.target.value;
+                          setContentImages(prev => prev.map((item, idx) => idx === i ? { ...item, caption: updatedCaption } : item));
+                        }} 
+                        className="w-full bg-base border border-white/15 rounded px-2.5 py-1.5 text-xs text-text-main focus:border-warning outline-none" 
+                      />
+                    </div>
+                    <button type="button" onClick={() => setContentImages(contentImages.filter((_, idx) => idx !== i))} className="p-2 text-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg shrink-0 animate-fadeIn">
+                      <Trash2 size={16}/>
                     </button>
                   </div>
                ))}
-               {newContentImageFiles.map(f => <div key={f.name} className="w-16 h-16 bg-white/5 flex items-center justify-center text-[10px] text-center overflow-hidden rounded border border-white/10">{f.name}</div>)}
+               {contentImages.length === 0 && (
+                 <p className="text-xs text-text-muted text-center py-6 font-mono">No laboratory files added to scientific gallery yet.</p>
+               )}
              </div>
+             {newContentImageFiles.length > 0 && (
+               <div className="text-xs text-warning font-semibold mt-1">
+                 {newContentImageFiles.length} newly selected files will be uploaded and added with auto-captions on saving.
+               </div>
+             )}
           </div>
 
           <div>

@@ -7,7 +7,7 @@ import { handleFirestoreError, OperationType } from "@/lib/firestoreUtils";
 import { db, auth } from "@/lib/firebase";
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, CheckCircle, X, BookOpen, User, Clock, ShieldCheck, ChevronRight, Bell, Lock, Unlock, CreditCard, Share2, Heart, Twitter, MessageCircle, Copy, Play, Map, TrendingUp } from "lucide-react";
+import { Loader2, CheckCircle, X, BookOpen, User, Clock, ShieldCheck, ChevronRight, Bell, Lock, Unlock, CreditCard, Share2, Heart, Twitter, MessageCircle, Copy, Play, Map, TrendingUp, Search } from "lucide-react";
 import { COURSES, Course } from "@/constants";
 
 declare global {
@@ -50,7 +50,17 @@ export default function Courses() {
   }, []);
 
   const allMergedCourses = useMemo(() => {
-    return [...COURSES, ...dbCourses];
+    const dict: Record<number, Course> = {};
+    COURSES.forEach(c => {
+      dict[c.id] = c;
+    });
+    dbCourses.forEach(c => {
+      const parsedId = typeof c.id === 'string' ? parseInt(c.id, 10) : c.id;
+      if (!isNaN(parsedId)) {
+        dict[parsedId] = { ...c, id: parsedId };
+      }
+    });
+    return Object.values(dict);
   }, [dbCourses]);
 
   const categories = useMemo(() => {
@@ -385,19 +395,40 @@ export default function Courses() {
 
   return (
     <div className="py-20 px-4 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row items-center justify-between mb-16 gap-8">
-        <div className="text-left w-full">
-          <h1 className="text-4xl md:text-6xl font-heading font-black mb-4 uppercase tracking-tight relative z-10">
+      {/* Title Header with View Mode Segmented Controls */}
+      <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-8 border-b border-black/10 dark:border-white/5 pb-8">
+        <div className="text-left w-full md:w-auto">
+          <h1 className="text-4xl md:text-6xl font-heading font-black mb-3 uppercase tracking-tight relative z-10">
             Explore <span className="text-warning">Courses</span>
           </h1>
-          <p className="text-xl text-text-muted relative z-10 mb-6">Get Started With Our Most Structured Courses</p>
+          <p className="text-base md:text-lg text-text-muted relative z-10">Explore Our MOst Structured Forensic And Skills Courses</p>
+        </div>
+
+        {/* View Mode Segmented Control */}
+        <div className="flex bg-base p-1 rounded-xl border border-black/10 dark:border-white/5 relative z-10 shrink-0">
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all cursor-pointer ${viewMode === 'grid' ? 'bg-warning text-crust font-black' : 'text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5'}`}
+          >
+            Grid Shell
+          </button>
+          <button
+            onClick={() => setViewMode('path')}
+            className={`px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all cursor-pointer ${viewMode === 'path' ? 'bg-warning text-crust font-black' : 'text-text-muted hover:text-text-main hover:bg-black/5 dark:hover:bg-white/5'}`}
+          >
+            Investigation Roadmap
+          </button>
         </div>
       </div>
 
+
+
+
+
       {searchTerm && (
-        <div className="mb-8 relative z-10">
-          <p className="text-sm text-text-muted">
-            Found <span className="text-warning font-bold">{filteredCourses.length}</span> investigation{filteredCourses.length !== 1 ? 's' : ''} for "<span className="text-text-main">{searchTerm}</span>"
+        <div className="mb-6 relative z-10">
+          <p className="text-xs text-text-muted">
+            Found <span className="text-warning font-bold">{filteredCourses.length}</span> active record{filteredCourses.length !== 1 ? 's' : ''} matching "<span className="text-text-main">{searchTerm}</span>"
           </p>
         </div>
       )}
@@ -406,72 +437,90 @@ export default function Courses() {
         <>
           {filteredCourses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 relative z-10">
-              {filteredCourses.map((course, idx) => (
-                <motion.div 
-                  key={course.id} 
-                  whileHover={{ y: -4, scale: 1.01 }}
-                  onClick={() => setSelectedCourse(course)}
-                  className="bg-surface border border-black/10 dark:border-white/5 overflow-hidden group hover:border-black/20 dark:hover:border-white/10 transition-colors flex flex-col shadow-sm rounded-xl cursor-pointer"
-                >
-                  <div className="h-48 relative overflow-hidden bg-black/5 dark:bg-white/5">
-                    <img 
-                      src={course.thumbnail} 
-                      alt={course.title} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-3 right-3 flex gap-2">
-                      <button 
-                        onClick={(e) => toggleWishlist(course.id, e)}
-                        className="p-2 bg-base/80 backdrop-blur-md rounded-full shadow-sm text-text-muted hover:text-warning transition-colors"
-                      >
-                        <Heart size={16} fill={isWishlisted(course.id) ? "currentColor" : "none"} className={isWishlisted(course.id) ? "text-warning" : ""} />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="p-5 flex-grow flex flex-col bg-surface">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-bold uppercase tracking-wider text-warning">{course.category} • {course.level}</span>
-                      <span className="text-xs text-text-muted flex items-center gap-1"><Clock size={12} /> {course.duration}</span>
-                    </div>
-                    
-                    <h3 className="font-heading font-bold text-lg mb-2 leading-tight text-text-main line-clamp-1">{course.title}</h3>
-                    <p className="text-sm text-text-muted mb-4 line-clamp-2">{course.description}</p>
-                    
-                    <div className="mt-auto pt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <img src={course.instructorImage} alt={course.instructor} className="w-6 h-6 rounded-full object-cover" />
-                        <span className="text-xs text-text-muted font-medium">{course.instructor}</span>
-                      </div>
-                      <div className="font-bold">
-                        {course.price === 0 ? (
-                          <span className="text-success text-sm">FREE</span>
+              {filteredCourses.map((course, idx) => {
+                const isComingSoon = course.price > 0;
+                return (
+                  <motion.div 
+                    key={course.id} 
+                    whileHover={{ y: -4, scale: 1.01 }}
+                    onClick={() => setSelectedCourse(course)}
+                    className={`bg-surface border border-black/10 dark:border-white/5 overflow-hidden group hover:border-black/20 dark:hover:border-white/10 transition-colors flex flex-col shadow-sm rounded-xl cursor-pointer ${isComingSoon ? 'opacity-90 hover:opacity-100' : ''}`}
+                  >
+                    <div className="h-48 relative overflow-hidden bg-black/5 dark:bg-white/5">
+                      <img 
+                        src={course.thumbnail} 
+                        alt={course.title} 
+                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isComingSoon ? 'filter saturate-75 contrast-95 group-hover:saturate-100 group-hover:contrast-100' : ''}`} 
+                        referrerPolicy="no-referrer"
+                      />
+                      
+                      {/* Left Status Badge Overlay */}
+                      <div className="absolute top-3 left-3 z-10 flex gap-2">
+                        {isComingSoon ? (
+                          <span className="bg-amber-500 text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md shadow-lg border border-amber-400">
+                            Coming Soon
+                          </span>
                         ) : (
-                          <span className="text-text-main text-sm">{course.price} INR</span>
+                          <span className="bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md shadow-lg border border-emerald-400 flex items-center gap-1.5 animate-pulse">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white inline-block"></span>
+                            Running
+                          </span>
                         )}
                       </div>
+
+                      <div className="absolute top-3 right-3 flex gap-2 z-10">
+                        <button 
+                          onClick={(e) => toggleWishlist(course.id, e)}
+                          className="p-2 bg-base/80 backdrop-blur-md rounded-full shadow-sm text-text-muted hover:text-warning transition-colors"
+                        >
+                          <Heart size={16} fill={isWishlisted(course.id) ? "currentColor" : "none"} className={isWishlisted(course.id) ? "text-warning" : ""} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-        ))}
-      </div>
+                    
+                    <div className="p-5 flex-grow flex flex-col bg-surface">
+                      <div className="flex justify-between items-center mb-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-warning">{course.category} • {course.level}</span>
+                        <span className="text-xs text-text-muted flex items-center gap-1"><Clock size={12} /> {course.duration}</span>
+                      </div>
+                      
+                      <h3 className="font-heading font-bold text-lg mb-2 leading-tight text-text-main line-clamp-1 group-hover:text-warning transition-colors">{course.title}</h3>
+                      <p className="text-sm text-text-muted mb-4 line-clamp-2">{course.description}</p>
+                      
+                      <div className="mt-auto pt-4 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <img src={course.instructorImage} alt={course.instructor} className="w-6 h-6 rounded-full object-cover" />
+                          <span className="text-xs text-text-muted font-medium">{course.instructor}</span>
+                        </div>
+                        <div className="font-bold">
+                          {isComingSoon ? (
+                            <span className="text-amber-500 text-[10px] font-black uppercase tracking-widest bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">Coming Soon</span>
+                          ) : (
+                            <span className="text-success text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">Running • Free</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="py-20 text-center relative z-10 bg-surface/50 border border-black/10 dark:border-white/10 rounded-2xl border-dashed w-full max-w-4xl mx-auto animate-fade-in">
+              <BookOpen size={48} className="text-text-muted mx-auto mb-4 opacity-20" />
+              <h3 className="text-xl font-heading font-black mb-2 uppercase tracking-widest">No Investigations Found</h3>
+              <p className="text-text-muted mb-6 px-12">Your search parameters did not match any active cases in the lab. Please try adjusting your search terms or expanding your category selection.</p>
+              <button 
+                onClick={() => { setSearchTerm(''); setSelectedCategory('All'); }}
+                className="px-8 py-3 bg-warning text-crust font-black uppercase tracking-widest rounded-md hover:bg-warning/90 transition-all flex items-center gap-2 mx-auto cursor-pointer"
+              >
+                <CheckCircle size={18} /> Reset All Parameters
+              </button>
+            </div>
+          )}
+        </>
       ) : (
-        <div className="py-20 text-center relative z-10 bg-surface/50 border border-black/10 dark:border-white/10 rounded-2xl border-dashed w-full max-w-4xl mx-auto">
-          <BookOpen size={48} className="text-text-muted mx-auto mb-4 opacity-20" />
-          <h3 className="text-xl font-heading font-black mb-2 uppercase tracking-widest">No Investigations Found</h3>
-          <p className="text-text-muted mb-6 px-12">Your search parameters did not match any active cases in the lab. Please try adjusting your search terms or expanding your category selection.</p>
-          <button 
-            onClick={() => { setSearchTerm(''); setSelectedCategory('All'); }}
-            className="px-8 py-3 bg-warning text-crust font-black uppercase tracking-widest rounded-md hover:bg-warning/90 transition-all flex items-center gap-2 mx-auto"
-          >
-            <CheckCircle size={18} /> Reset All Parameters
-          </button>
-        </div>
-      )}
-    </>
-    ) : (
-      <div className="relative z-10 py-12 flex flex-col items-center">
+        <div className="relative z-10 py-12 flex flex-col items-center">
           <div className="w-full max-w-4xl relative pb-20">
             {/* Connecting Line */}
             <div className="absolute left-8 md:left-1/2 top-0 bottom-0 w-1 bg-black/10 dark:bg-white/10 md:-translate-x-1/2 rounded-full hidden md:block"></div>
@@ -487,52 +536,77 @@ export default function Courses() {
                 </div>
                 
                 <div className="space-y-6 md:space-y-0 relative">
-                  {allMergedCourses.filter(c => c.level === level).map((course, idx) => (
-                    <div key={course.id} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 0 ? 'md:flex-row-reverse' : ''} mb-8`}>
-                      <div className="w-full md:w-1/2 flex justify-center">
-                        <motion.div 
-                          whileHover={{ scale: 1.05 }}
-                          onClick={() => setSelectedCourse(course)}
-                          className={`w-full max-w-sm bg-surface border border-black/10 dark:border-white/5 rounded-xl overflow-hidden cursor-pointer shadow-xl hover:border-warning/30 transition-colors group relative`}
-                        >
-                          <div className="h-40 relative">
-                            <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                            <div className="absolute inset-0 bg-base/40 group-hover:bg-warning/10 transition-colors"></div>
-                            <div className="absolute top-4 right-4 bg-warning text-crust text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-lg">
-                              Step {course.id}
+                  {allMergedCourses.filter(c => c.level === level).map((course, idx) => {
+                    const isComingSoon = course.price > 0;
+                    return (
+                      <div key={course.id} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 0 ? 'md:flex-row-reverse' : ''} mb-8`}>
+                        <div className="w-full md:w-1/2 flex justify-center">
+                          <motion.div 
+                            whileHover={{ scale: 1.05 }}
+                            onClick={() => setSelectedCourse(course)}
+                            className={`w-full max-w-sm bg-surface border border-black/10 dark:border-white/5 rounded-xl overflow-hidden cursor-pointer shadow-xl hover:border-warning/30 transition-colors group relative ${isComingSoon ? 'opacity-95' : ''}`}
+                          >
+                            <div className="h-40 relative">
+                              <img src={course.thumbnail} alt={course.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${isComingSoon ? 'filter grayscale saturate-50' : ''}`} />
+                              <div className="absolute inset-0 bg-base/40 group-hover:bg-warning/10 transition-colors"></div>
+                              
+                              {/* Overlay badges */}
+                              <div className="absolute top-4 left-4 z-10 flex gap-2">
+                                {isComingSoon ? (
+                                  <span className="bg-amber-500 text-black text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded shadow-lg border border-amber-400">
+                                    Coming Soon
+                                  </span>
+                                ) : (
+                                  <span className="bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded shadow-lg border border-emerald-400 animate-pulse">
+                                    Running
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="absolute top-4 right-4 bg-warning text-crust text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-lg">
+                                Step {course.id}
+                              </div>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setPreviewVideo(course.modules[0]?.lessons[0]?.videoUrl); }}
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-warning/80 backdrop-blur-sm flex items-center justify-center text-crust opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-[0_0_20px_rgba(0,240,255,0.5)]"
+                              >
+                                <Play size={20} fill="currentColor" />
+                              </button>
                             </div>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setPreviewVideo(course.modules[0]?.lessons[0]?.videoUrl); }}
-                              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-warning/80 backdrop-blur-sm flex items-center justify-center text-crust opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 shadow-[0_0_20px_rgba(0,240,255,0.5)]"
-                            >
-                              <Play size={20} fill="currentColor" />
-                            </button>
-                          </div>
-                          <div className="p-4">
-                            <h3 className="font-heading font-bold text-lg group-hover:text-warning transition-colors mb-2 line-clamp-1">{course.title}</h3>
-                            <div className="flex items-center justify-between text-xs text-text-muted">
-                              <span className="flex items-center gap-1"><Clock size={12} /> {course.duration}</span>
-                              <span className="font-bold text-warning">{course.price === 0 ? 'FREE' : `${course.price} INR`}</span>
+                            <div className="p-4">
+                              <h3 className="font-heading font-bold text-lg group-hover:text-warning transition-colors mb-2 line-clamp-1">{course.title}</h3>
+                              <div className="flex items-center justify-between text-xs text-text-muted">
+                                <span className="flex items-center gap-1"><Clock size={12} /> {course.duration}</span>
+                                <span className="font-bold">
+                                  {isComingSoon ? (
+                                    <span className="text-amber-500 uppercase tracking-widest text-[9px] font-black bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Coming Soon</span>
+                                  ) : (
+                                    <span className="text-success uppercase tracking-widest text-[9px] font-black bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Running</span>
+                                  )}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
+                          </motion.div>
+                        </div>
+                        
+                        {/* Node connection point (desktop only) */}
+                        <div className="hidden md:flex w-12 h-12 rounded-full bg-surface border-4 border-base items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.2)] z-10 mx-auto relative shrink-0">
+                           {isPurchased(course.id) ? (
+                             <CheckCircle size={20} className="text-success" />
+                           ) : isComingSoon ? (
+                             <Lock size={18} className="text-amber-500/50" />
+                           ) : (
+                             <Lock size={20} className="text-text-muted" />
+                           )}
+                           {idx < allMergedCourses.filter(c => c.level === level).length - 1 && (
+                             <div className="absolute top-full w-1 h-12 bg-black/10 dark:bg-white/10"></div>
+                           )}
+                        </div>
+                        
+                        <div className="hidden md:block w-full md:w-1/2"></div>
                       </div>
-                      
-                      {/* Node connection point (desktop only) */}
-                      <div className="hidden md:flex w-12 h-12 rounded-full bg-surface border-4 border-base items-center justify-center shadow-[0_0_15px_rgba(0,0,0,0.2)] z-10 mx-auto relative shrink-0">
-                         {isPurchased(course.id) ? (
-                           <CheckCircle size={20} className="text-success" />
-                         ) : (
-                           <Lock size={20} className="text-text-muted" />
-                         )}
-                         {idx < allMergedCourses.filter(c => c.level === level).length - 1 && (
-                           <div className="absolute top-full w-1 h-12 bg-black/10 dark:bg-white/10"></div>
-                         )}
-                      </div>
-                      
-                      <div className="hidden md:block w-full md:w-1/2"></div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))}
@@ -758,24 +832,35 @@ export default function Courses() {
                   <div className="bg-surface/80 backdrop-blur-sm pt-6 border-t border-black/10 dark:border-white/5 mt-auto">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted mb-1">Pricing</p>
+                         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted mb-1">Pricing Status</p>
                          {selectedCourse.price === 0 ? (
-                           <span className="text-3xl font-heading font-black text-warning tracking-[0.1em]">FREE</span>
+                           <div className="flex flex-col">
+                             <span className="text-3xl font-heading font-black text-emerald-500 tracking-[0.1em]">FREE</span>
+                             <span className="text-[9px] uppercase tracking-widest font-black text-emerald-400 mt-1">Operational & Live</span>
+                           </div>
                          ) : (
-                           <div className="flex items-baseline gap-3">
-                             <span className="text-3xl font-heading font-black text-warning">{selectedCourse.price} INR</span>
-                             <span className="text-sm text-text-muted line-through italic">{selectedCourse.originalPrice} INR</span>
+                           <div className="flex flex-col">
+                             <span className="text-2xl font-heading font-black text-amber-500 uppercase tracking-wider">COMING SOON</span>
+                             <span className="text-[9px] uppercase tracking-widest font-black text-amber-400 mt-1">Under Development</span>
                            </div>
                          )}
                       </div>
                       
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                         <User size={12} className="text-warning" />
-                        <span>1.2k+ Enrolled</span>
+                        <span>{selectedCourse.price === 0 ? "1.2k+ Enrolled" : "Waitlist Open"}</span>
                       </div>
                     </div>
 
-                    {isPurchased(selectedCourse.id) ? (
+                    {selectedCourse.price > 0 ? (
+                      <button 
+                        disabled
+                        className="w-full py-4 bg-amber-500/10 text-amber-500 border border-amber-500/20 font-black uppercase tracking-[0.15em] text-xs rounded-lg flex items-center justify-center gap-3 cursor-not-allowed"
+                      >
+                        <Lock size={16} />
+                        Under Development • Coming Soon
+                      </button>
+                    ) : isPurchased(selectedCourse.id) ? (
                       <button 
                         onClick={() => navigate(`/player/${selectedCourse.id}`)}
                         className="w-full py-4 bg-success text-text-main font-black uppercase tracking-[0.2em] rounded-md hover:bg-success/90 transition-colors flex items-center justify-center gap-3"
@@ -793,10 +878,8 @@ export default function Courses() {
                           <><Loader2 size={20} className="animate-spin" /> Analyzing Payment...</>
                         ) : success === selectedCourse.id ? (
                           <><CheckCircle size={20} /> Access Granted!</>
-                        ) : selectedCourse.price === 0 ? (
-                          <>Enroll Now <ChevronRight size={18} /></>
                         ) : (
-                          <>Secure Course Access <ChevronRight size={18} /></>
+                          <>Enroll Now <ChevronRight size={18} /></>
                         )}
                       </button>
                     )}

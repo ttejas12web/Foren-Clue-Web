@@ -27,7 +27,17 @@ export default function Dashboard() {
   }, [user]);
 
   const allMergedCourses = useMemo(() => {
-    return [...COURSES, ...dbCourses];
+    const dict: Record<number, Course> = {};
+    COURSES.forEach(c => {
+      dict[c.id] = c;
+    });
+    dbCourses.forEach(c => {
+      const parsedId = typeof c.id === 'string' ? parseInt(c.id, 10) : c.id;
+      if (!isNaN(parsedId)) {
+         dict[parsedId] = { ...c, id: parsedId };
+      }
+    });
+    return Object.values(dict);
   }, [dbCourses]);
 
   if (!user) {

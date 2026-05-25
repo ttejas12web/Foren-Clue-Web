@@ -5,7 +5,8 @@ import {
   Loader2, Sparkles, X, Box, FileText, ChevronRight, Clock, 
   MapPin, Microscope, Info, Search, Filter, Brain, Dna, 
   Target, Fingerprint, Database, AlertCircle, CheckCircle2,
-  Trophy, BookOpen, Edit, Trash2, Plus, Share2, Check
+  Trophy, BookOpen, Edit, Trash2, Plus, Share2, Check,
+  RotateCw, ZoomIn, ZoomOut, RotateCcw, ChevronLeft, Eye
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { useAuth, checkIsAdmin } from '@/contexts/AuthContext';
@@ -29,7 +30,7 @@ interface CaseFile {
   createdBy?: string;
   evidenceLabels?: string[];
   attachments?: string[];
-  contentImages?: string[];
+  contentImages?: (string | { url: string; caption?: string })[];
   sources?: { title: string; url: string }[];
   forensicTechniques?: string[];
 }
@@ -45,6 +46,18 @@ export default function Cases() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [caseToEdit, setCaseToEdit] = useState<CaseFile | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
+  const [rotation, setRotation] = useState(0);
+  const [zoom, setZoom] = useState(1);
+  const [naturalSize, setNaturalSize] = useState<{ width: number; height: number } | null>(null);
+
+  // Reset controls when transitioning images
+  useEffect(() => {
+    setRotation(0);
+    setZoom(1);
+    setNaturalSize(null);
+  }, [activeGalleryIndex]);
 
   // Sync URL query when selectedCase changes
   useEffect(() => {
@@ -400,15 +413,38 @@ export default function Cases() {
                           <h3 className="text-xl font-black uppercase tracking-tight text-text-main mb-6 flex items-center gap-2">
                              <Box size={20} className="text-warning" /> Scientific Gallery
                           </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {selectedCase.contentImages.map((img, idx) => (
-                              <div key={idx} className="relative group overflow-hidden rounded-2xl border border-black/10 dark:border-white/10 aspect-video">
-                                <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Evidence detail" referrerPolicy="no-referrer" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Visual Evidence Dossier #{idx + 1}</span>
+                          <p className="text-xs text-text-muted mt-[-1rem] mb-6">Click any original record to activate high-fidelity analyzer: zoom, rotate, and view in uncropped full orientation.</p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {selectedCase.contentImages.map((img, idx) => {
+                              const imgObj = typeof img === 'string' ? { url: img, caption: '' } : img;
+                              const imgUrl = imgObj?.url || '';
+                              const imgCaption = imgObj?.caption || '';
+                              return (
+                                <div 
+                                  key={idx} 
+                                  onClick={() => setActiveGalleryIndex(idx)}
+                                  className="group cursor-pointer bg-base/40 p-4 rounded-2xl border border-black/10 dark:border-white/5 hover:border-warning/30 transition-all duration-300 flex flex-col justify-between"
+                                >
+                                  <div className="relative overflow-hidden rounded-xl border border-black/10 dark:border-white/10 aspect-video mb-3">
+                                    <img src={imgUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Evidence detail" referrerPolicy="no-referrer" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all flex items-end p-4 justify-between">
+                                      <span className="text-[10px] font-black uppercase tracking-widest text-white flex items-center gap-1">
+                                        <Eye size={10} className="text-warning animate-pulse" /> Interactive Analysis
+                                      </span>
+                                      <span className="text-[9px] font-mono text-warning bg-warning/10 px-2 py-0.5 rounded border border-warning/20">Open Original</span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[10px] font-mono text-text-muted uppercase tracking-wider mb-1">
+                                      Visual Evidence Records #{idx + 1}
+                                    </div>
+                                    <div className="text-xs font-bold text-text-main line-clamp-2">
+                                      {imgCaption || 'No specific forensic caption recorded.'}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       )}
@@ -468,6 +504,171 @@ export default function Cases() {
           userEmail={user.email}
         />
       )}
+
+      {/* Dynamic Scientific Lightbox - Original Dimensions & Orientation Viewer */}
+      <AnimatePresence>
+        {activeGalleryIndex !== null && selectedCase?.contentImages && selectedCase.contentImages[activeGalleryIndex] && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex flex-col justify-between p-4 md:p-6"
+          >
+            {/* Lightbox TOP Control Bar */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-3 bg-white/5 rounded-xl border border-white/10 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-warning/15 flex items-center justify-center border border-warning/10">
+                  <Box size={14} className="text-warning animate-pulse" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-text-main">Scientific Image Analyzer</h4>
+                  <p className="text-[10px] font-mono text-text-muted">
+                    Evidence Case ID: {selectedCase.id.substring(0, 8)} • Image {activeGalleryIndex + 1} of {selectedCase.contentImages.length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Toolbar */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {/* Scale Display */}
+                <div className="flex items-center px-2.5 py-1.5 bg-black/40 rounded-lg text-[10px] font-mono text-warning uppercase border border-white/5">
+                  Zoom: {Math.round(zoom * 100)}%
+                </div>
+
+                {/* Resolution Display */}
+                {naturalSize && (
+                  <div className="flex items-center px-2.5 py-1.5 bg-black/40 rounded-lg text-[10px] font-mono text-text-muted uppercase border border-white/5">
+                    Original: {naturalSize.width} × {naturalSize.height} px
+                  </div>
+                )}
+
+                {/* Zoom Controls */}
+                <button 
+                  onClick={() => setZoom(prev => Math.max(0.25, prev - 0.25))}
+                  title="Zoom Out"
+                  className="p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-lg text-text-muted hover:text-text-main transition-colors border border-white/5"
+                >
+                  <ZoomOut size={14} />
+                </button>
+                <button 
+                  onClick={() => setZoom(prev => Math.min(4, prev + 0.25))}
+                  title="Zoom In"
+                  className="p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-lg text-text-muted hover:text-text-main transition-colors border border-white/5"
+                >
+                  <ZoomIn size={14} />
+                </button>
+
+                {/* Rotation Controls */}
+                <button 
+                  onClick={() => setRotation(prev => prev - 90)}
+                  title="Rotate Counter-Clockwise"
+                  className="p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-lg text-text-muted hover:text-text-main transition-colors border border-white/5"
+                >
+                  <RotateCcw size={14} />
+                </button>
+                <button 
+                  onClick={() => setRotation(prev => prev + 90)}
+                  title="Rotate Clockwise"
+                  className="p-1.5 sm:p-2 bg-white/5 hover:bg-white/10 rounded-lg text-text-muted hover:text-text-main transition-colors border border-white/5"
+                >
+                  <RotateCw size={14} />
+                </button>
+
+                {/* Reset Controls */}
+                <button 
+                  onClick={() => { setZoom(1); setRotation(0); }}
+                  className="px-2.5 py-1.5 bg-warning/10 border border-warning/20 text-warning rounded-lg text-[10px] uppercase font-mono hover:bg-warning/20 transition-colors"
+                >
+                  Reset
+                </button>
+
+                {/* Close Button */}
+                <button 
+                  onClick={() => setActiveGalleryIndex(null)}
+                  className="p-1.5 sm:p-2 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white rounded-lg transition-all border border-red-500/20"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+
+            {/* Lightbox MAIN content section */}
+            <div className="flex-1 relative flex items-center justify-center overflow-hidden my-4">
+              {/* Prev Button */}
+              {activeGalleryIndex > 0 && (
+                <button 
+                  onClick={() => {
+                    setActiveGalleryIndex(prev => prev !== null ? prev - 1 : null);
+                  }}
+                  className="absolute left-2 sm:left-4 z-10 p-3 bg-black/60 hover:bg-warning hover:text-crust rounded-full text-text-main border border-white/10 transition-all shadow-lg focus:outline-none focus:ring-2 focus:ring-warning/50"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+
+              {/* Image viewport */}
+              <div className="w-full h-full flex items-center justify-center p-4">
+                <div className="overflow-auto max-w-full max-h-full flex items-center justify-center custom-scrollbar">
+                  <div 
+                    className="transition-transform duration-200 ease-out flex items-center justify-center"
+                    style={{
+                      transform: `scale(${zoom}) rotate(${rotation}deg)`
+                    }}
+                  >
+                    <img 
+                      src={(() => {
+                        const imgItem = selectedCase.contentImages[activeGalleryIndex];
+                        return typeof imgItem === 'string' ? imgItem : imgItem?.url || '';
+                      })()} 
+                      alt="Scientific Document Detail" 
+                      onLoad={(e) => {
+                        const imgEl = e.currentTarget;
+                        setNaturalSize({ width: imgEl.naturalWidth, height: imgEl.naturalHeight });
+                      }}
+                      className="max-w-[85vw] max-h-[60vh] object-contain drop-shadow-[0_0_30px_rgba(235,196,159,0.15)] rounded-lg border border-white/5"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Next Button */}
+              {activeGalleryIndex < selectedCase.contentImages.length - 1 && (
+                <button 
+                  onClick={() => {
+                    setActiveGalleryIndex(prev => prev !== null ? prev + 1 : null);
+                  }}
+                  className="absolute right-2 sm:right-4 z-10 p-3 bg-black/60 hover:bg-warning hover:text-crust rounded-full text-text-main border border-white/10 transition-all shadow-lg focus:outline-none focus:ring-2 focus:ring-warning/50"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              )}
+            </div>
+
+            {/* Lightbox BOTTOM Caption & Detail information panel */}
+            <div className="p-4 bg-white/5 rounded-xl border border-white/10 max-h-[25vh] overflow-y-auto custom-scrollbar relative z-10">
+              <span className="text-[10px] uppercase font-mono tracking-widest text-warning block mb-1 font-black">
+                Evidence Forensic Caption
+              </span>
+              <p className="text-sm font-bold text-text-main">
+                {(() => {
+                  const imgItem = selectedCase.contentImages[activeGalleryIndex];
+                  if (!imgItem) return '';
+                  return typeof imgItem === 'string' 
+                    ? 'No specific forensic caption recorded.'
+                    : imgItem.caption || 'No specific forensic caption recorded.';
+                })()}
+              </p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-white/5 text-[9px] text-text-muted font-mono leading-none">
+                <div>Case Tag: <span className="text-text-main uppercase font-bold">{selectedCase.tag}</span></div>
+                <div>Category: <span className="text-text-main uppercase font-bold">{selectedCase.type}</span></div>
+                <div>Rotation: <span className="text-text-main uppercase font-bold">{rotation % 360}° Rotation</span></div>
+                <div>Aspect Constraint: <span className="text-text-main uppercase font-bold">Nature Original (Uncropped)</span></div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

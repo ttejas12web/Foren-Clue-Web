@@ -40,7 +40,7 @@ export const COURSES: Course[] = [
     category: "General Forensics",
     duration: "4 Weeks",
     description: "Learn the fundamentals of forensic science, including evidence handling, crime scene analysis, and lab techniques.",
-    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEitDO6DU6jqsjEi9qlT_F8Nnt-CURNLMWysqiQZaaBtuvQs8gTv34MFU4_EEhEAJp-_VMSheOmEWghWS0SEm21MUbS0l37WaoaLvZiqXt968mvmZ_1QHgvpbuuwHxMldrvKRfYbgtM4N-6jX88qJjnziD_OcMiPKs4jw75gcjsWy0jwaM7ARH0t-1Y4tyE/s1280/photo_6323596718204718711_y.jpg",
+    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjt-N4hwGU4tzUkx9XwNKGHv2Te4J3tbfxJWFRXS6Z3KzdZX1f9VKZB88MYTeF4OqePRwDcGMbqjmOpoROSJlsSHaZJnLEIMnP2S98gBLOlP6IDs33SBqLf7yhLEyWCICI90IfGk5XV06fUYonMDC5zufGitO8-sTe1sIExdZcckiMh0VuZmmmPJpxhGQs/s1352/IMG_0866.PNG",
     curriculum: [
       "History and Scope of Forensic Science",
       "Crime Scene Documentation and Photography",
@@ -84,7 +84,7 @@ export const COURSES: Course[] = [
     category: "Cyber Forensics",
     duration: "6 Weeks",
     description: "Master the art of recovering and investigating material found in digital devices.",
-    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
+    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBbTT3QCs_EHXasFjAT9pC1laU-vAIRhIQ7qjpQHS3ErsprqykE9eT63H-XnATqutTGhCjq-zzbmvCeFhHfE0_DZ1wtZmu8pmARltV1makLhdqyCwftxjW55J0qyPbmjn6H6Abb6OzIHPUrkbkYOwmDeVxLmGyH_0nbr9qOnWtWKEg3NaPIvEJKTNg8vU/s1323/IMG_0865.PNG",
     curriculum: [
       "Digital Evidence Collection and Preservation",
       "File System Analysis (NTFS, FAT, EXT)",
@@ -119,7 +119,7 @@ export const COURSES: Course[] = [
     category: "Biological Science",
     duration: "5 Weeks",
     description: "Deep dive into biological evidence and DNA profiling technologies.",
-    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
+    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBbTT3QCs_EHXasFjAT9pC1laU-vAIRhIQ7qjpQHS3ErsprqykE9eT63H-XnATqutTGhCjq-zzbmvCeFhHfE0_DZ1wtZmu8pmARltV1makLhdqyCwftxjW55J0qyPbmjn6H6Abb6OzIHPUrkbkYOwmDeVxLmGyH_0nbr9qOnWtWKEg3NaPIvEJKTNg8vU/s1323/IMG_0865.PNG",
     curriculum: [
       "Identification of Biological Fluids (Blood, Semen, Saliva)",
       "Bloodstain Pattern Analysis (BPA)",
@@ -152,7 +152,7 @@ export const COURSES: Course[] = [
     category: "Documentation",
     duration: "3 Weeks",
     description: "Essential techniques for documenting crime scenes accurately through photography.",
-    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
+    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBbTT3QCs_EHXasFjAT9pC1laU-vAIRhIQ7qjpQHS3ErsprqykE9eT63H-XnATqutTGhCjq-zzbmvCeFhHfE0_DZ1wtZmu8pmARltV1makLhdqyCwftxjW55J0qyPbmjn6H6Abb6OzIHPUrkbkYOwmDeVxLmGyH_0nbr9qOnWtWKEg3NaPIvEJKTNg8vU/s1323/IMG_0865.PNG",
     curriculum: [
       "Camera Settings and Exposure for Investigations",
       "Macro Photography for Trace Evidence",
@@ -185,7 +185,7 @@ export const COURSES: Course[] = [
     category: "Documentation",
     duration: "4 Weeks",
     description: "Learn to identify forgeries, handwriting analysis, and paper/ink comparisons.",
-    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
+    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBbTT3QCs_EHXasFjAT9pC1laU-vAIRhIQ7qjpQHS3ErsprqykE9eT63H-XnATqutTGhCjq-zzbmvCeFhHfE0_DZ1wtZmu8pmARltV1makLhdqyCwftxjW55J0qyPbmjn6H6Abb6OzIHPUrkbkYOwmDeVxLmGyH_0nbr9qOnWtWKEg3NaPIvEJKTNg8vU/s1323/IMG_0865.PNG",
     curriculum: [
       "Handwriting Comparison and Identification",
       "Analysis of Altered and Obligations Documents",
@@ -218,7 +218,7 @@ export const COURSES: Course[] = [
     category: "Anthropology",
     duration: "8 Weeks",
     description: "Specialized study of human skeletal remains to determine identity and cause of death.",
-    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbA2bNXKfIxI7Qu74ewsnfg3DfivOnnt75Pzyd84TNf8UtCUVw0P9t-c-L9IGanpGt0Y_6B9p-3Bh8g3tAt1vSLMoZ9XMkTznEYGeEaQ-JCI3RgAmwKcEbvMQYxUYWc-Pa9htjJFIwHuaF87Zk1NejgEvwzoOF8GhPb-k7KI9tK2t1NP2IXhXWDLTv7qs/s1536/3E3F94BB-E3E0-4642-8D7D-95C9101B469F.jpg",
+    instructorImage: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBbTT3QCs_EHXasFjAT9pC1laU-vAIRhIQ7qjpQHS3ErsprqykE9eT63H-XnATqutTGhCjq-zzbmvCeFhHfE0_DZ1wtZmu8pmARltV1makLhdqyCwftxjW55J0qyPbmjn6H6Abb6OzIHPUrkbkYOwmDeVxLmGyH_0nbr9qOnWtWKEg3NaPIvEJKTNg8vU/s1323/IMG_0865.PNG",
     curriculum: [
       "Human vs. Animal Osteology",
       "Determination of Age, Sex, and Ancestry from Bone",

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion, useMotionValue, useTransform } from 'motion/react';
 import { CrimeTape } from '@/components/ui/CrimeTape';
 import { Link } from 'react-router-dom';
@@ -14,6 +15,9 @@ export default function Home() {
   
   const rotateX = useTransform(y, [-300, 300], [10, -10]);
   const rotateY = useTransform(x, [-300, 300], [-10, 10]);
+
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [isJoined, setIsJoined] = useState(false);
 
   function handleMouseMove(event: React.MouseEvent<HTMLElement>) {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -224,20 +228,41 @@ The ForenClue Curriculum Board
                   </div>
 
                   {/* Title / Description under book */}
-                  <h3 className="font-heading font-black text-lg mb-1 uppercase tracking-tight text-text-main">
-                    Forensic Blueprint Sample Chapter
+                  <h3 className="font-heading font-black text-lg mb-4 uppercase tracking-tight text-text-main">
+                    Forensic Careers Blueprint Book
                   </h3>
-                  <p className="text-[11px] font-mono text-text-muted mb-4 uppercase tracking-widest">
-                    PDF Document • 4.2 MB • ForenClue Publications
-                  </p>
 
-                  {/* Download Button */}
-                  <button 
-                    onClick={handleDownloadSample}
-                    className="w-full sm:w-auto px-6 py-3 bg-warning hover:bg-warning-dark text-crust font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs shadow-lg hover:shadow-warning/20 cursor-pointer active:scale-95"
-                  >
-                    <Download size={14} className="animate-bounce" /> Download Preview PDF
-                  </button>
+                  {/* Download / Notify Button with Newsletter subscription form */}
+                  {!isJoined ? (
+                    <form 
+                      onSubmit={(e) => { 
+                        e.preventDefault(); 
+                        if (waitlistEmail.trim()) {
+                          setIsJoined(true); 
+                        }
+                      }} 
+                      className="w-full flex flex-col gap-2.5"
+                    >
+                      <input 
+                        type="email" 
+                        required 
+                        placeholder="Enter your email for launch access & updates" 
+                        value={waitlistEmail}
+                        onChange={(e) => setWaitlistEmail(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-crust border border-white/10 text-text-main placeholder-text-muted focus:border-warning outline-none text-xs text-center"
+                      />
+                      <button 
+                        type="submit"
+                        className="w-full px-6 py-3 bg-warning hover:bg-warning-dark text-crust font-black uppercase tracking-wider rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-xs shadow-lg hover:shadow-warning/20 cursor-pointer active:scale-95"
+                      >
+                        Notify Me on Launch
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="w-full p-4 bg-warning/10 border border-warning/20 rounded-xl text-center text-xs font-bold text-warning uppercase tracking-wide">
+                      ⚡ Registration Confirmed! We will email you on Launch!
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

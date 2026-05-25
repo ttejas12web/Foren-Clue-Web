@@ -6,7 +6,7 @@ import {
   Lock, Mail, Key, LayoutGrid, BookOpen, Plus, Trash2, 
   Settings, CheckCircle2, AlertCircle, FileText, Upload, 
   ExternalLink, LogOut, Loader2, Sparkles, HelpCircle, 
-  Globe, Edit3
+  Globe, Edit3, MessageSquare
 } from 'lucide-react';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore';
@@ -21,14 +21,15 @@ export default function Admin() {
   const [authError, setAuthError] = useState('');
   const [btnLoading, setBtnLoading] = useState(false);
 
-  // Active Tab: 'overview' | 'courses' | 'ebooks' | 'texts'
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'ebooks' | 'texts'>('overview');
+  // Active Tab: 'overview' | 'courses' | 'ebooks' | 'texts' | 'doubts'
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'ebooks' | 'texts' | 'doubts'>('overview');
 
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [editingEbookId, setEditingEbookId] = useState<string | null>(null);
 
   // Courses Management State
   const [courses, setCourses] = useState<any[]>([]);
+  const [doubts, setDoubts] = useState<any[]>([]);
   const [courseLoading, setCourseLoading] = useState(false);
   const [newCourse, setNewCourse] = useState({
     title: '',
@@ -110,6 +111,14 @@ export default function Admin() {
         textList.push({ id: docSnap.id, ...docSnap.data() });
       });
       setCopiedTexts(textList);
+
+      // Doubts
+      const doubtsSnap = await getDocs(collection(db, 'doubts'));
+      const doubtsList: any[] = [];
+      doubtsSnap.forEach(docSnap => {
+        doubtsList.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      setDoubts(doubtsList);
 
     } catch (e) {
       console.error("Error fetching collections", e);
@@ -524,6 +533,12 @@ export default function Admin() {
                   className={`w-full text-left px-4 py-3 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-3 transition-colors ${activeTab === 'ebooks' ? 'bg-warning text-crust' : 'bg-surface hover:bg-surface/80 text-text-muted hover:text-text-main border border-black/5 dark:border-white/5'}`}
                 >
                   <FileText size={16} /> E-Library Books
+                </button>
+                <button 
+                  onClick={() => setActiveTab('doubts')}
+                  className={`w-full text-left px-4 py-3 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-3 transition-colors ${activeTab === 'doubts' ? 'bg-warning text-crust' : 'bg-surface hover:bg-surface/80 text-text-muted hover:text-text-main border border-black/5 dark:border-white/5'}`}
+                >
+                  <MessageSquare size={16} /> Community Doubts
                 </button>
               </div>
 
@@ -1035,6 +1050,46 @@ export default function Admin() {
                                   <Trash2 size={14} />
                                 </button>
                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 4. DOUBTS MANAGEMENT */}
+                {activeTab === 'doubts' && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                    <div className="bg-surface border border-black/10 dark:border-white/5 rounded-2xl p-6">
+                      <h2 className="text-xl font-heading font-black uppercase tracking-tight mb-4">Manage Community Doubts</h2>
+                      {doubts.length === 0 ? (
+                        <p className="text-xs text-text-muted py-4">No doubts reported yet.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {doubts.map((doubt: any) => (
+                            <div key={doubt.id} className="flex items-center justify-between p-3 bg-base border border-black/5 dark:border-white/5 rounded-xl">
+                              <div>
+                                <h4 className="text-xs font-black uppercase text-text-main leading-tight">{doubt.title}</h4>
+                                <p className="text-[10px] text-text-muted truncate max-w-sm">{doubt.content}</p>
+                                <span className="text-[10px] uppercase font-mono tracking-widest text-warning font-black">Author: {doubt.authorName}</span>
+                              </div>
+                              <button 
+                                onClick={async () => {
+                                  if (!window.confirm("Are you sure you want to delete this doubt?")) return;
+                                  try {
+                                    await deleteDoc(doc(db, 'doubts', doubt.id));
+                                    setSuccessMsg("Doubt successfully purged.");
+                                    fetchCollections();
+                                  } catch (err: any) {
+                                    setErrMsg(`Purge failed: ${err.message}`);
+                                  }
+                                }}
+                                className="p-2 border border-red-500/10 hover:border-red-500/30 text-red-400 bg-red-400/5 hover:bg-red-400/10 rounded-lg transition-all"
+                                title="Purge doubt"
+                              >
+                                <Trash2 size={14} />
+                              </button>
                             </div>
                           ))}
                         </div>

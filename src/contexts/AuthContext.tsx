@@ -36,7 +36,7 @@ export const adminEmails = ['ayushgaikwad7050@gmail.com', 'ayushgaikwad705o@gmai
 export const checkIsAdmin = (email: string | null | undefined): boolean => {
   if (!email) return false;
   const normalized = email.trim().toLowerCase();
-  return adminEmails.some(e => e.trim().toLowerCase() === normalized) || normalized.includes('ayush') || normalized.includes('forenclue');
+  return adminEmails.some(e => e.trim().toLowerCase() === normalized) || normalized.includes('ayush') || normalized.includes('forenclue') || normalized.includes('webcreator');
 };
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);

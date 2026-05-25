@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
+import { SEO } from '@/components/layout/SEO';
 import { 
   Loader2, Sparkles, X, Box, FileText, ChevronRight, Clock, 
   MapPin, Microscope, Info, Search, Filter, Brain, Dna, 
@@ -151,6 +152,13 @@ export default function Cases() {
 
   return (
     <div className="min-h-screen bg-base py-24 pb-32">
+      <SEO 
+        title="Solved Cases & Declassified Investigative Dossiers"
+        description="Study declassified real-world forensic crime case studies. Examine trace evidence logging, ballistic reconstruction reports, and digital crime summaries."
+        keywords="solved forensic cases, crime case studies, dactyloscopy case dossiers, criminalistics research archive"
+        canonicalPath="/cases"
+        image={selectedCase?.image}
+      />
       {/* Background Decor */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03]">
         <div className="absolute inset-0 forensic-grid" />

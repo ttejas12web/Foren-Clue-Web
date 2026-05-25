@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { DNAViewer } from "@/components/ui/ThreeDElement";
+import { SEO } from "@/components/layout/SEO";
 
 export default function Careers() {
   const navigate = useNavigate();
@@ -12,6 +13,12 @@ export default function Careers() {
 
   return (
     <div className="py-20 px-4 max-w-7xl mx-auto relative overflow-hidden">
+      <SEO 
+        title="Forensic Science Career Guidance & Roadmaps"
+        description="Plan your forensic education. Explore step-by-step career path guidelines to become a crime scene investigator, DNA fingerprint examiner, ballistic analyst, or forensic toxicology consultant."
+        keywords="become a forensic expert, forensic science jobs india, crime scene investigator study, dna lab expert career, how to study forensic"
+        canonicalPath="/careers"
+      />
       <div className="absolute top-1/2 left-0 w-[500px] h-[500px] pointer-events-none opacity-20 -translate-y-1/2 -ml-32">
          <DNAViewer />
       </div>

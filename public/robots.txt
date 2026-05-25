@@ -1,0 +1,25 @@
+# Robots.txt for ForenClue (forenclue.in)
+# Designed for maximum SEO crawl efficiency
+
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /courses
+Allow: /cases
+Allow: /careers
+Allow: /community
+Allow: /services
+Allow: /ebooks
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+
+# Disallow private user/admin zones to save crawl budget
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /profile/
+Disallow: /player/
+Disallow: /login
+
+# Provide high-contrast Sitemap path to search robots
+Sitemap: https://forenclue.in/sitemap.xml

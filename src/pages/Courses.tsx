@@ -1,5 +1,6 @@
 import { EvidenceMarker } from "@/components/ui/EvidenceMarker";
 import { motion, AnimatePresence } from 'motion/react';
+import { SEO } from "@/components/layout/SEO";
 import { MicroscopeViewer } from "@/components/ui/ThreeDElement";
 import { useAuth } from "@/contexts/AuthContext";
 import { doc, setDoc, arrayUnion, arrayRemove, serverTimestamp, updateDoc, collection, onSnapshot, increment } from "firebase/firestore";
@@ -395,6 +396,12 @@ export default function Courses() {
 
   return (
     <div className="py-20 px-4 max-w-7xl mx-auto">
+      <SEO 
+        title="Professional Forensic Science & Investigation Courses"
+        description="Browse professional forensic science training courses. Master questioning protocols, DNA fingerprinting, cybercrime analysis, and trace evidence logging."
+        keywords="forensic courses online, forensic certificates, learn forensics, crime scene investigation training, fingerprint lifting course"
+        canonicalPath="/courses"
+      />
       {/* Title Header with View Mode Segmented Controls */}
       <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-8 border-b border-black/10 dark:border-white/5 pb-8">
         <div className="text-left w-full md:w-auto">

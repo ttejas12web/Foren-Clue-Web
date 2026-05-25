@@ -1,8 +1,15 @@
 import { Mail, MapPin } from "lucide-react";
+import { SEO } from "@/components/layout/SEO";
 
 export default function Contact() {
   return (
     <div className="py-20 px-4 max-w-7xl mx-auto">
+      <SEO 
+        title="Contact Forensic Education Support & Advisory"
+        description="Reach out to ForenClue. Send your queries regarding forensic science certifications, institute partnerships, customized training, or handbook pre-orders."
+        keywords="contact forenclue, forensic support portal, contact forensic advisory team, mumbai forensic institute"
+        canonicalPath="/contact"
+      />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
         <div>
           <h1 className="text-4xl md:text-6xl font-heading font-black mb-6 uppercase tracking-tight text-warning">

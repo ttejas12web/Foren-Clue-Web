@@ -1,4 +1,5 @@
 import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { SEO } from '@/components/layout/SEO';
 
 const TeamCard = ({ member }: { member: any }) => {
   const x = useMotionValue(0);
@@ -113,6 +114,12 @@ export default function About() {
 
   return (
     <div className="py-20 px-4 max-w-7xl mx-auto relative perspective-[2000px]">
+      <SEO 
+        title="About Our Mission & Team"
+        description="Learn about the visionaries, educators, and technology experts behind ForenClue. We are democratizing case-based and high-fidelity forensic science learning globally."
+        keywords="forenclue founders, forenclue team, tejas tapse, mrunmayee bodhe, forensic learning platform, chief technology officer forensic"
+        canonicalPath="/about"
+      />
       <div className="max-w-4xl mx-auto mb-24 text-left">
         <h1 className="text-4xl md:text-5xl font-heading font-black mb-12 uppercase tracking-tight text-center">
           About <span className="text-warning">ForenClue</span>

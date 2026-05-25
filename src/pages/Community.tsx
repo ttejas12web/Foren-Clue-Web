@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
+import { SEO } from '@/components/layout/SEO';
 import { 
   MessageSquare, 
   Image as ImageIcon, 
@@ -326,6 +327,12 @@ export default function Community() {
 
   return (
     <div className="min-h-screen bg-base py-12 px-4">
+      <SEO 
+        title="Interactive Forensic Q&A Community & Doubt Portal"
+        description="Connect with aspiring forensic scientists, medical investigators, and cybersecurity professionals. Resolve questions on fingerprint lifting, DNA analysis, UGC NET, or toxicology protocols."
+        keywords="forensic science forum, forensic science community, ugc net doubts, forensics Q&A"
+        canonicalPath="/community"
+      />
       <div className="max-w-4xl mx-auto">
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
           <div>

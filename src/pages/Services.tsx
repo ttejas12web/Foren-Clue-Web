@@ -1,3 +1,5 @@
+import { SEO } from "@/components/layout/SEO";
+
 export default function Services() {
   const services = [
     { title: "Workshops & Webinars", desc: "Live sessions with industry veterans and investigators." },
@@ -7,6 +9,12 @@ export default function Services() {
 
   return (
     <div className="py-20 px-4 max-w-7xl mx-auto">
+      <SEO 
+        title="Forensic Workshops, Certifications, and College Collaborations"
+        description="Boost your profile with recognized forensic certification credentials, live webinars, physical hands-on workshops, and institutional university affiliations."
+        keywords="forensic science workshops, forensic science certified online, forensic university collaboration, study forensics program"
+        canonicalPath="/services"
+      />
       <h1 className="text-4xl md:text-6xl font-heading font-black mb-16 text-center uppercase tracking-tight">
         Our <span className="text-warning">Services</span>
       </h1>

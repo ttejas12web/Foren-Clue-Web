@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { BookOpen, FileText, HelpCircle, Archive, Search, Download, ExternalLink } from 'lucide-react';
+import { SEO } from '@/components/layout/SEO';
 import { cn } from '@/lib/utils';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -90,6 +91,12 @@ export default function EBooks() {
 
   return (
     <div className="pt-24 pb-16 min-h-screen bg-base relative overflow-hidden">
+      <SEO 
+        title="Forensic Science E-Library and Previous Year Exams Papers"
+        description="Access structural academic notebooks, recommended books, past UGC NET Forensic Science question sheets, Toxicology revision cards, and CSID checklists."
+        keywords="forensic exam prep, study UGC net forensics, forensic previous year paper, forensic library pdf, toxicology summary card"
+        canonicalPath="/ebooks"
+      />
       {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-96 bg-surface z-0 border-b border-black/10 dark:border-white/5">
          <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px]"></div>

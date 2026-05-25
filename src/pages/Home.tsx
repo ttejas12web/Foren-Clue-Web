@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Search, ShieldAlert, BookOpen, Users, Star, Download } from 'lucide-react';
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
 import { EditableText } from '@/components/ui/EditableText';
+import { SEO } from '@/components/layout/SEO';
 // DNAViewer removed
 
 const MotionLink = motion.create(Link);
@@ -98,6 +99,12 @@ The ForenClue Curriculum Board
 
   return (
     <div className="flex flex-col min-h-screen">
+      <SEO 
+        title="India's Premier Forensic EdTech Platform"
+        description="Master forensic science, crime scene investigation, fingerprint lifting, digital forensics, and cybersecurity with India's first dedicated, expert-led forensic platform."
+        keywords="forensic science, crime scene investigation, fingerprint analysis, digital forensics, ballistics, bloodstain pattern analysis, forensic training india, docudraft, forenclue"
+        canonicalPath=""
+      />
       {/* Hero Section */}
       <section 
         className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-grid-pattern pt-20"
@@ -230,57 +237,17 @@ The ForenClue Curriculum Board
                 <div className="absolute -inset-1 bg-gradient-to-r from-warning to-amber-500 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
                 
                 <div className="relative bg-surface border border-black/10 dark:border-white/5 p-6 rounded-2xl shadow-2xl flex flex-col items-center text-center animate-fadeIn">
-                  {/* 3D Perspective Book Wrapper */}
-                  <div style={{ perspective: "1200px" }} className="w-full flex justify-center mb-8 relative py-4">
-                    <motion.div
-                      initial={{ opacity: 0, y: 60, rotateY: -30, rotateX: 12, scale: 0.9 }}
-                      whileInView={{ opacity: 1, y: 0, rotateY: -15, rotateX: 6, scale: 1 }}
-                      viewport={{ once: true, margin: "-100px" }}
-                      whileHover={{ rotateY: -2, rotateX: 2, scale: 1.06, y: -8 }}
-                      transition={{ type: "spring", stiffness: 90, damping: 15 }}
-                      style={{ transformStyle: "preserve-3d" }}
-                      className="relative w-[210px] h-[280px] sm:w-[240px] sm:h-[320px] rounded-r-lg shadow-[25px_25px_50px_rgba(0,0,0,0.55)] cursor-pointer select-none group/book"
-                    >
-                      {/* Depth effect for pages (drawn along right side in 3D space) */}
-                      <div 
-                        className="absolute h-full w-[16px] bg-gradient-to-r from-gray-200 via-gray-100 to-white dark:from-white/10 dark:via-white/5 dark:to-white/15 border-y border-r border-black/15 dark:border-white/10"
-                        style={{ 
-                          right: "-16px",
-                          top: "2px",
-                          height: "calc(100% - 4px)",
-                          transform: "rotateY(90deg)", 
-                          transformOrigin: "left center" 
-                        }}
-                      >
-                        {/* Fake pages lines */}
-                        <div className="absolute inset-0 bg-grid-pattern opacity-10" />
-                      </div>
-
-                      {/* Cover wrapper with depth crease */}
-                      <div 
-                        className="absolute inset-0 rounded-r-lg overflow-hidden border border-white/10 bg-crust"
-                        style={{ transformStyle: "preserve-3d" }}
-                      >
-                        <img 
-                          src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEive7NdnBis_kLLqaN2d8q37014tEMd2ftmqFkeCIiLjxkG2sDfip5VQldxh9izJC-KTsD4ZfXnILFWEOG2jmJkwdKww8-jqW-2jAqpTsv4AOE47MkqpHHibGcBN4GhPqN3OIF1xxIbs0KQLRgxfk2XJRsdlQyY_JqqRnajm2-pB1xoiZN4BnkdtDc9ICU/s1500/1779707899.png" 
-                          alt="Forensic Investigation Handbook Cover" 
-                          className="w-full h-full object-cover rounded-r-lg"
-                          referrerPolicy="no-referrer"
-                        />
-                        
-                        {/* Glossy sheen effect on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover/book:translate-x-full transition-transform duration-1000 ease-out z-20" />
-                        
-                        {/* Spine depth crease overlay */}
-                        <div className="absolute top-0 bottom-0 left-[12px] w-[3px] bg-black/40 shadow-[0_0_5px_rgba(0,0,0,0.6)] z-10" />
-                        <div className="absolute top-0 bottom-0 left-0 w-[12px] bg-gradient-to-r from-black/50 to-transparent z-10" />
-                      </div>
-
-                      {/* Ribbon badge */}
-                      <div className="absolute top-4 left-[-10px] bg-warning text-crust text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded shadow-lg z-30 transform -skew-x-6">
-                        Exclusive Preview
-                      </div>
-                    </motion.div>
+                  {/* Book Image */}
+                  <div className="relative overflow-hidden rounded-xl border border-black/10 dark:border-white/10 aspect-[3/4] w-full max-w-[280px] mb-6 shadow-xl transition-all duration-500 group-hover:scale-105">
+                    <img 
+                      src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEive7NdnBis_kLLqaN2d8q37014tEMd2ftmqFkeCIiLjxkG2sDfip5VQldxh9izJC-KTsD4ZfXnILFWEOG2jmJkwdKww8-jqW-2jAqpTsv4AOE47MkqpHHibGcBN4GhPqN3OIF1xxIbs0KQLRgxfk2XJRsdlQyY_JqqRnajm2-pB1xoiZN4BnkdtDc9ICU/s1500/1779707899.png" 
+                      alt="Forensic Investigation Handbook Cover" 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute top-3 right-3 bg-warning text-crust text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded shadow-lg">
+                      Exclusive Preview
+                    </div>
                   </div>
 
                   {/* Title / Description under book */}

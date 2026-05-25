@@ -1,8 +1,15 @@
 import { Shield } from 'lucide-react';
+import { SEO } from '@/components/layout/SEO';
 
 export default function PrivacyPolicy() {
   return (
     <div className="py-20 px-4 max-w-4xl mx-auto">
+      <SEO 
+        title="Privacy Policy"
+        description="ForenClue Privacy Policy. Understand how we secure your credential records, payment details, course logs, and educational progress profiles."
+        keywords="forenclue privacy, forensic platform legal"
+        canonicalPath="/privacy"
+      />
       <div className="text-center mb-16">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-warning/10 border border-warning/20 mb-6 shadow-[0_0_30px_rgba(255,165,0,0.2)]">
           <Shield className="text-warning" size={32} />

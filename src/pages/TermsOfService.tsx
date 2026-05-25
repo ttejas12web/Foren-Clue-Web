@@ -1,8 +1,15 @@
 import { Scale } from 'lucide-react';
+import { SEO } from '@/components/layout/SEO';
 
 export default function TermsOfService() {
   return (
     <div className="py-20 px-4 max-w-4xl mx-auto">
+      <SEO 
+        title="Terms of Service"
+        description="ForenClue Terms of Service. Review rules for using course materials, participating in community threads, and enrollment rules."
+        keywords="forenclue terms, forensic platform rules"
+        canonicalPath="/terms"
+      />
       <div className="text-center mb-16">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-warning/10 border border-warning/20 mb-6 shadow-[0_0_30px_rgba(255,165,0,0.2)]">
           <Scale className="text-warning" size={32} />

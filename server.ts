@@ -143,12 +143,84 @@ async function startServer() {
   });
 
   // Vite middleware for development
+  let viteDevServer: any = null;
+
+  // Intercept declassified forensic cases for social media sharing cards & embed previews
+  app.get("/cases", async (req, res, next) => {
+    const caseId = req.query.case as string;
+    
+    const indexPath = isProd 
+      ? path.join(buildPath, 'index.html') 
+      : path.join(process.cwd(), 'index.html');
+
+    if (!fs.existsSync(indexPath)) {
+      return next();
+    }
+
+    try {
+      let html = fs.readFileSync(indexPath, 'utf-8');
+      
+      if (caseId) {
+        try {
+          const dbAdmin = getDbAdmin();
+          const caseDoc = await dbAdmin.collection('cases').doc(caseId).get();
+          
+          if (caseDoc.exists) {
+            const data = caseDoc.data();
+            if (data) {
+              const title = data.title || 'Forensic Case Dossier';
+              const summary = data.summary || 'Declassified forensic study on ForenClue';
+              const image = data.image || '';
+              const fullUrl = `https://${req.get('host')}${req.originalUrl}`;
+
+              // Make sure the image is fully qualified / absolute
+              let ogImageUrl = image;
+              if (ogImageUrl && !ogImageUrl.startsWith('http://') && !ogImageUrl.startsWith('https://')) {
+                ogImageUrl = `https://${req.get('host')}${ogImageUrl}`;
+              }
+
+              // Dynamic meta tags injection
+              const metaTags = `
+    <!-- Dynamic social media preview tags -->
+    <meta property="og:title" content="${title.replace(/"/g, '&quot;')} | ForenClue Case Study" />
+    <meta property="og:description" content="${summary.replace(/"/g, '&quot;')}" />
+    <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:url" content="${fullUrl}" />
+    <meta property="og:type" content="article" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')} | ForenClue Case Study" />
+    <meta name="twitter:description" content="${summary.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:image" content="${ogImageUrl}" />
+              `;
+
+              html = html.replace('<head>', `<head>${metaTags}`);
+              html = html.replace(/<title>.*?<\/title>/, `<title>${title} | ForenClue Archive</title>`);
+            }
+          }
+        } catch (dbError) {
+          console.error("Error fetching case details for preview metadata:", dbError);
+        }
+      }
+
+      if (!isProd && viteDevServer) {
+        html = await viteDevServer.transformIndexHtml(req.originalUrl, html);
+      }
+
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+      return;
+    } catch (err) {
+      console.error("Error processing case preview server-side:", err);
+      next();
+    }
+  });
+
   if (!isProd) {
-    const vite = await createViteServer({
+    viteDevServer = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
-    app.use(vite.middlewares);
+    app.use(viteDevServer.middlewares);
   } else {
     app.use(express.static(buildPath));
     app.get('*', (req, res) => {

@@ -55,6 +55,7 @@ interface CaseEditorModalProps {
 
 export function CaseEditorModal({ onClose, caseToEdit, userEmail }: CaseEditorModalProps) {
   const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     title: caseToEdit?.title || '',
     tag: caseToEdit?.tag || '',

@@ -96,7 +96,7 @@ export default function About() {
     {
       name: "Ayush Gaikwad",
       role: "Co-Founder",
-      image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgLYq3YLScCtq9eKGJP1cWrqOlYe3kxV9GUbm405NlbaO7i8tYUiwbDWFHLxKfvgNZcrxgDwnIUD0bWy61B7rmz2Re3s7ytJD14XzlL-_4TyE8DNXbCTlm1AOO8-AEr7pCTKYRAqM13pabc8OA7mSwauqBd6-pq8XUoAn3yBv_tbtfb_zdKPT3R5iOFwqA/s1142/IMG-20260510-WA0011.jpg",
+      image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjsllQMEHs5qT_GJSyZnGVcFH64Zadagai4Y9rlbFHQ9vuaVgX-3CgkApXQu660nTDPB0C3mEMJoZSnhLnOpBtTOt5mlEEADPKcOZbzcem8pq3flsJWbG6adC-aDmg9tlmyu4nGyaDh-TLzHanJ4dde67VUggiI5rMCb-4dVVUzRhY-A_EJKmiQgLkJez4/s1462/IMG_0859%20(1).PNG",
       points: [
         "Forensic Science Student"
       ]

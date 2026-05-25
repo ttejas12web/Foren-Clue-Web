@@ -5,7 +5,7 @@ import {
   Loader2, Sparkles, X, Box, FileText, ChevronRight, Clock, 
   MapPin, Microscope, Info, Search, Filter, Brain, Dna, 
   Target, Fingerprint, Database, AlertCircle, CheckCircle2,
-  Trophy, BookOpen, Edit, Trash2, Plus
+  Trophy, BookOpen, Edit, Trash2, Plus, Share2, Check
 } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { useAuth, checkIsAdmin } from '@/contexts/AuthContext';
@@ -44,6 +44,67 @@ export default function Cases() {
   const [dbCases, setDbCases] = useState<CaseFile[]>([]);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [caseToEdit, setCaseToEdit] = useState<CaseFile | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Sync URL query when selectedCase changes
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (selectedCase) {
+      searchParams.set('case', selectedCase.id);
+    } else {
+      searchParams.delete('case');
+    }
+    const paramStr = searchParams.toString();
+    const newUrl = `${window.location.pathname}${paramStr ? '?' + paramStr : ''}`;
+    window.history.pushState({ path: newUrl }, '', newUrl);
+  }, [selectedCase]);
+
+  // Support deep-linking to shared cases
+  useEffect(() => {
+    if (dbCases.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const sharedCaseId = params.get('case');
+      if (sharedCaseId) {
+        const found = dbCases.find(c => c.id === sharedCaseId);
+        if (found) {
+          setSelectedCase(found);
+        }
+      }
+    }
+  }, [dbCases]);
+
+  const handleCopyLink = (e: React.MouseEvent, caseId: string, caseTitle: string, caseSummary: string) => {
+    e.stopPropagation(); // prevent opening the modal when clicking share!
+    
+    const shareUrl = `${window.location.origin}/cases?case=${caseId}`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: `${caseTitle} | ForenClue Case Study`,
+        text: caseSummary,
+        url: shareUrl
+      })
+      .then(() => {
+        setCopiedId(caseId);
+        setTimeout(() => setCopiedId(null), 2500);
+      })
+      .catch((err) => {
+        console.log("Native share failed or dismissed", err);
+        copyToClipboard(shareUrl, caseId);
+      });
+    } else {
+      copyToClipboard(shareUrl, caseId);
+    }
+  };
+
+  const copyToClipboard = (text: string, caseId: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(caseId);
+      setTimeout(() => setCopiedId(null), 2500);
+    }).catch(err => {
+      console.error("Failed to copy link:", err);
+    });
+  };
 
   useEffect(() => {
     const q = query(collection(db, 'cases'));
@@ -85,95 +146,107 @@ export default function Cases() {
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           {/* Header */}
-            <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
-              <div>
-                <h1 className="text-5xl md:text-7xl font-heading font-black uppercase tracking-tighter mb-4">
-                  Case <span className="text-warning">Archive</span>
-                </h1>
-                <p className="text-lg text-text-muted max-w-xl font-medium">
-                  Declassified forensic reports from landmark investigations around the globe.
-                </p>
+          <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <div>
+              <h1 className="text-5xl md:text-7xl font-heading font-black uppercase tracking-tighter mb-4">
+                Case <span className="text-warning">Archive</span>
+              </h1>
+              <p className="text-lg text-text-muted max-w-xl font-medium">
+                Declassified forensic reports from landmark investigations around the globe.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
+                <input 
+                  type="text" 
+                  placeholder="Search dossiers..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-surface border border-black/10 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-xs font-bold focus:border-warning/50 outline-none transition-all"
+                />
               </div>
-              <div className="flex flex-col sm:flex-row gap-4 items-center">
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
-                  <input 
-                    type="text" 
-                    placeholder="Search dossiers..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-surface border border-black/10 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-xs font-bold focus:border-warning/50 outline-none transition-all"
-                  />
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                  <Filter size={14} className="text-warning shrink-0" />
-                  {['All', 'Homicide', 'Cold Case', 'Cyber'].map(t => (
-                    <button 
-                      key={t}
-                      onClick={() => setFilterType(t)}
-                      className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all shrink-0 ${filterType === t ? 'bg-warning/10 border-warning text-warning' : 'border-black/10 dark:border-white/5 text-text-muted hover:border-black/10 dark:border-white/10'}`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                  {isAdmin && (
-                    <button 
-                      onClick={() => {
-                         setCaseToEdit(null);
-                         setIsEditorOpen(true);
-                      }}
-                      className="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border border-warning/50 text-warning hover:bg-warning/10 transition-all shrink-0 flex items-center gap-1"
-                    >
-                      <Plus size={12}/> Add Case
-                    </button>
-                  )}
-                </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                <Filter size={14} className="text-warning shrink-0" />
+                {['All', 'Homicide', 'Cold Case', 'Cyber'].map(t => (
+                  <button 
+                    key={t}
+                    onClick={() => setFilterType(t)}
+                    className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all shrink-0 ${filterType === t ? 'bg-warning/10 border-warning text-warning' : 'border-black/10 dark:border-white/5 text-text-muted hover:border-black/10 dark:border-white/10'}`}
+                  >
+                    {t}
+                  </button>
+                ))}
+                {isAdmin && (
+                  <button 
+                    onClick={() => {
+                       setCaseToEdit(null);
+                       setIsEditorOpen(true);
+                    }}
+                    className="px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border border-warning/50 text-warning hover:bg-warning/10 transition-all shrink-0 flex items-center gap-1"
+                  >
+                    <Plus size={12}/> Add Case
+                  </button>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Case Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredArchive.map((item) => (
-                <motion.div 
-                  key={item.id}
-                  whileHover={{ y: -10 }}
-                  onClick={() => setSelectedCase(item)}
-                  className="bg-surface/50 border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden hover:border-warning/30 transition-all cursor-pointer group shadow-xl"
-                >
-                  <div className="h-56 relative overflow-hidden">
-                    <img src={item.image} className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={item.title} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-base via-base/20 to-transparent" />
-                    <div className="absolute absolute bottom-4 left-4 flex flex-wrap gap-2">
-                      <span className="px-3 py-1 bg-warning text-crust text-[8px] font-black uppercase tracking-widest rounded-lg">{item.tag}</span>
-                      {item.status === 'draft' && isAdmin && (
-                        <span className="px-3 py-1 bg-red-500/80 text-white text-[8px] font-black uppercase tracking-widest rounded-lg">Draft</span>
+          {/* Case Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredArchive.map((item) => (
+              <motion.div 
+                key={item.id}
+                whileHover={{ y: -10 }}
+                onClick={() => setSelectedCase(item)}
+                className="bg-surface/50 border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden hover:border-warning/30 transition-all cursor-pointer group shadow-xl"
+              >
+                <div className="h-56 relative overflow-hidden">
+                  <img src={item.image} className="w-full h-full object-cover grayscale opacity-50 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={item.title} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-base via-base/20 to-transparent" />
+                  <div className="absolute bottom-4 left-4 flex flex-wrap gap-2">
+                    <span className="px-3 py-1 bg-warning text-crust text-[8px] font-black uppercase tracking-widest rounded-lg">{item.tag}</span>
+                    {item.status === 'draft' && isAdmin && (
+                      <span className="px-3 py-1 bg-red-500/80 text-white text-[8px] font-black uppercase tracking-widest rounded-lg">Draft</span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">{item.year} • {item.location}</span>
+                    <EvidenceMarker number={item.difficulty[0]} className="scale-50 origin-right" />
+                  </div>
+                  <h3 className="text-2xl font-heading font-black mb-4 uppercase italic group-hover:text-warning transition-colors">{item.title}</h3>
+                  <p className="text-sm text-text-muted leading-relaxed mb-8 line-clamp-3">
+                    {item.summary}
+                  </p>
+                  <div className="flex items-center justify-between pt-6 border-t border-black/10 dark:border-white/5">
+                    <button 
+                      type="button"
+                      onClick={(e) => handleCopyLink(e, item.id, item.title, item.summary)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-warning/5 border border-warning/15 hover:bg-warning hover:text-crust hover:border-warning font-sans text-[10px] font-black uppercase tracking-wider text-warning transition-all cursor-pointer"
+                    >
+                      {copiedId === item.id ? (
+                        <>
+                          <Check size={11} className="text-current animate-bounce" />
+                          <span>Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Share2 size={11} className="text-current" />
+                          <span>Share</span>
+                        </>
                       )}
-                    </div>
+                    </button>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-warning group-hover:translate-x-1.5 transition-transform inline-flex items-center gap-1">
+                      Open Case <ChevronRight size={14} />
+                    </span>
                   </div>
-                  <div className="p-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-[9px] font-bold text-text-muted uppercase tracking-widest">{item.year} • {item.location}</span>
-                      <EvidenceMarker number={item.difficulty[0]} className="scale-50 origin-right" />
-                    </div>
-                    <h3 className="text-2xl font-heading font-black mb-4 uppercase italic group-hover:text-warning transition-colors">{item.title}</h3>
-                    <p className="text-sm text-text-muted leading-relaxed mb-8 line-clamp-3">
-                      {item.summary}
-                    </p>
-                    <div className="flex items-center justify-between pt-6 border-t border-black/10 dark:border-white/5">
-                      <div className="flex gap-2">
-                        {item.evidenceLabels?.map(l => (
-                          <span key={l} className="w-2 h-2 rounded-full bg-warning/40" title={l} />
-                        ))}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-warning group-hover:translate-x-2 transition-transform inline-flex items-center gap-1">
-                        Open Case <ChevronRight size={14} />
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
       {/* Real Case Detail Modal */}
@@ -208,12 +281,31 @@ export default function Cases() {
                     <p className="text-[10px] uppercase tracking-widest font-bold text-text-muted">Official Forensic Archive • Expert Peer-Reviewed</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setSelectedCase(null)}
-                  className="p-3 bg-black/5 dark:bg-white/5 hover:bg-warning hover:text-crust transition-all rounded-xl"
-                >
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => handleCopyLink(e, selectedCase.id, selectedCase.title, selectedCase.summary)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-warning/10 hover:bg-warning border border-warning/20 text-warning hover:text-crust transition-all text-[11px] font-black uppercase tracking-widest cursor-pointer shadow-sm"
+                  >
+                    {copiedId === selectedCase.id ? (
+                      <>
+                        <Check size={14} className="text-current animate-bounce" />
+                        <span>Link Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Share2 size={14} className="text-current" />
+                        <span>Share Study</span>
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    onClick={() => setSelectedCase(null)}
+                    className="p-3 bg-black/5 dark:bg-white/5 hover:bg-warning hover:text-crust transition-all rounded-xl cursor-pointer"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 flex flex-col lg:flex-row relative">
@@ -250,10 +342,10 @@ export default function Cases() {
                 <div className="lg:w-80 p-8 border-r border-black/10 dark:border-white/5 bg-crust/30 space-y-8">
                   <div>
                     <label className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-3 block">Primary Evidence</label>
-                    <img src={selectedCase.image} className="w-full aspect-square object-cover rounded-2xl grayscale border border-black/10 dark:border-white/5" alt="Evidence" />
+                    <img src={selectedCase.image} className="w-full aspect-square object-cover rounded-2xl grayscale border border-black/10 dark:border-white/5" alt="Evidence" referrerPolicy="no-referrer" />
                   </div>
 
-                  {selectedCase.evidenceLabels && (
+                  {selectedCase.evidenceLabels && selectedCase.evidenceLabels.length > 0 && (
                     <div>
                       <label className="text-[9px] font-black uppercase tracking-widest text-text-muted mb-3 block">Recovered Items</label>
                       <div className="flex flex-wrap gap-2">
@@ -311,7 +403,7 @@ export default function Cases() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {selectedCase.contentImages.map((img, idx) => (
                               <div key={idx} className="relative group overflow-hidden rounded-2xl border border-black/10 dark:border-white/10 aspect-video">
-                                <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Evidence detail" />
+                                <img src={img} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="Evidence detail" referrerPolicy="no-referrer" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
                                   <span className="text-[10px] font-black uppercase tracking-widest text-white">Visual Evidence Dossier #{idx + 1}</span>
                                 </div>
@@ -321,7 +413,7 @@ export default function Cases() {
                         </div>
                       )}
 
-                      {selectedCase.forensicTechniques && (
+                      {selectedCase.forensicTechniques && selectedCase.forensicTechniques.length > 0 && (
                         <div className="mb-12 p-8 bg-warning/5 border border-warning/10 rounded-3xl">
                           <h3 className="text-xl font-black uppercase tracking-tight text-warning mb-6 flex items-center gap-2">
                              <Microscope size={20} /> Applied Forensic Techniques
@@ -339,7 +431,7 @@ export default function Cases() {
                         </div>
                       )}
 
-                      {selectedCase.sources && (
+                      {selectedCase.sources && selectedCase.sources.length > 0 && (
                         <div className="mt-16 pt-8 border-t border-black/10 dark:border-white/5">
                           <h3 className="text-sm font-black uppercase tracking-widest text-text-muted mb-6">Expert Verification & Sources</h3>
                           <div className="flex flex-wrap gap-4">

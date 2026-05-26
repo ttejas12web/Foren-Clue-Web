@@ -55,7 +55,7 @@ export default function Careers() {
 
           <div className="space-y-8">
             <div className="bg-warning text-crust p-8 shadow-xl">
-              <h3 className="text-xl font-heading font-black mb-4 uppercase">Carrier RoadMap Handbook</h3>
+              <h3 className="text-xl font-heading font-black mb-4 uppercase">Career RoadMap Handbook</h3>
               <p className="mb-6 opacity-80 text-sm font-medium">Download our comprehensive guide to mastering the required skills.</p>
               <button 
                 onClick={() => navigate('/?scroll=book-mockup')}

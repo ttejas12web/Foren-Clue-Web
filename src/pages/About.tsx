@@ -76,7 +76,7 @@ export default function About() {
   const team = [
     {
       name: "Tejas Tapse",
-      role: "Founder of ForenClue | Forensic Science Student",
+      role: "Founder of Foren Clue",
       image: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhBbTT3QCs_EHXasFjAT9pC1laU-vAIRhIQ7qjpQHS3ErsprqykE9eT63H-XnATqutTGhCjq-zzbmvCeFhHfE0_DZ1wtZmu8pmARltV1makLhdqyCwftxjW55J0qyPbmjn6H6Abb6OzIHPUrkbkYOwmDeVxLmGyH_0nbr9qOnWtWKEg3NaPIvEJKTNg8vU/s1323/IMG_0865.PNG",
       points: [
         "Creator of Neet Cracker",

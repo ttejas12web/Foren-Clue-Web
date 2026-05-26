@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SEO } from "@/components/layout/SEO";
 import { MicroscopeViewer } from "@/components/ui/ThreeDElement";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, setDoc, arrayUnion, arrayRemove, serverTimestamp, updateDoc, collection, onSnapshot, increment } from "firebase/firestore";
+import { doc, setDoc, arrayUnion, arrayRemove, serverTimestamp, updateDoc, collection, onSnapshot, increment, query, where, getDocs } from "firebase/firestore";
 import { handleFirestoreError, OperationType } from "@/lib/firestoreUtils";
 import { db, auth } from "@/lib/firebase";
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useMemo } from "react";
-import { Loader2, CheckCircle, X, BookOpen, User, Clock, ShieldCheck, ChevronRight, Bell, Lock, Unlock, CreditCard, Share2, Heart, Twitter, MessageCircle, Copy, Play, Map, TrendingUp, Search } from "lucide-react";
+import { Loader2, CheckCircle, X, BookOpen, User, Clock, ShieldCheck, ChevronRight, Bell, Lock, Unlock, CreditCard, Share2, Heart, Instagram, MessageCircle, Copy, Play, Map, TrendingUp, Search } from "lucide-react";
 import { COURSES, Course } from "@/constants";
 
 declare global {
@@ -34,6 +34,8 @@ export default function Courses() {
   const [previewVideo, setPreviewVideo] = useState<string | null>(null);
   const [localPurchased, setLocalPurchased] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [courseAnnouncements, setCourseAnnouncements] = useState<any[]>([]);
+  const [enrolledStudents, setEnrolledStudents] = useState<any[]>([]);
 
   const [dbCourses, setDbCourses] = useState<Course[]>([]);
   
@@ -61,7 +63,14 @@ export default function Courses() {
         dict[parsedId] = { ...c, id: parsedId };
       }
     });
-    return Object.values(dict);
+    return Object.values(dict).sort((a, b) => {
+      const timeA = (a as any).createdAt?.seconds || 0;
+      const timeB = (b as any).createdAt?.seconds || 0;
+      if (timeA === 0 && timeB === 0) {
+        return a.id - b.id;
+      }
+      return timeB - timeA;
+    });
   }, [dbCourses]);
 
   const categories = useMemo(() => {
@@ -111,6 +120,40 @@ export default function Courses() {
       if (course) setSelectedCourse(course);
     }
   }, [searchParams, userProfile, loading, user, navigate, allMergedCourses]);
+
+  useEffect(() => {
+    if (selectedCourse) {
+      const fetchStudents = async () => {
+        try {
+          const usersRef = collection(db, "users");
+          const q = query(usersRef, where("purchasedCourses", "array-contains", selectedCourse.id));
+          const querySnapshot = await getDocs(q);
+          const students: any[] = [];
+          querySnapshot.forEach((doc) => {
+            students.push(doc.data());
+          });
+          setEnrolledStudents(students);
+        } catch (error) {
+          console.error("Error fetching enrolled students:", error);
+        }
+      };
+
+      const q = query(collection(db, 'announcements'), where('courseId', '==', selectedCourse.id));
+      const unsub = onSnapshot(q, (snapshot) => {
+        const announcements: any[] = [];
+        snapshot.forEach((doc) => {
+          announcements.push({ id: doc.id, ...doc.data() });
+        });
+        setCourseAnnouncements(announcements.sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds));
+      });
+      
+      fetchStudents();
+      return () => unsub();
+    } else {
+      setEnrolledStudents([]);
+      setCourseAnnouncements([]);
+    }
+  }, [selectedCourse]);
 
   const handlePurchase = async (courseId: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -378,13 +421,15 @@ export default function Courses() {
     return userProfile?.progress?.wishlist?.includes(courseId);
   };
 
-  const handleSocialShare = (course: Course, platform: 'twitter' | 'whatsapp' | 'copy', e: React.MouseEvent) => {
+  const handleSocialShare = (course: Course, platform: 'instagram' | 'whatsapp' | 'copy', e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}/courses?id=${course.id}`;
     const text = `Join the investigation: ${course.title} at Forensic Insights Lab!`;
     
-    if (platform === 'twitter') {
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    if (platform === 'instagram') {
+      navigator.clipboard.writeText(url);
+      alert("Investigation link copied! Open Instagram to paste and share.");
+      window.open(`https://www.instagram.com/`, '_blank');
     } else if (platform === 'whatsapp') {
       window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
     } else {
@@ -448,7 +493,7 @@ export default function Courses() {
                 const isComingSoon = course.price > 0;
                 return (
                   <motion.div 
-                    key={course.id} 
+                    key={`course-grid-${course.id}-${idx}`} 
                     whileHover={{ y: -4, scale: 1.01 }}
                     onClick={() => setSelectedCourse(course)}
                     className={`bg-surface border border-black/10 dark:border-white/5 overflow-hidden group hover:border-black/20 dark:hover:border-white/10 transition-colors flex flex-col shadow-sm rounded-xl cursor-pointer ${isComingSoon ? 'opacity-90 hover:opacity-100' : ''}`}
@@ -546,7 +591,7 @@ export default function Courses() {
                   {allMergedCourses.filter(c => c.level === level).map((course, idx) => {
                     const isComingSoon = course.price > 0;
                     return (
-                      <div key={course.id} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 0 ? 'md:flex-row-reverse' : ''} mb-8`}>
+                      <div key={`course-list-${course.id}-${idx}`} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 0 ? 'md:flex-row-reverse' : ''} mb-8`}>
                         <div className="w-full md:w-1/2 flex justify-center">
                           <motion.div 
                             whileHover={{ scale: 1.05 }}
@@ -740,7 +785,7 @@ export default function Courses() {
                       </div>
                       <div className="flex items-center gap-2 text-warning/80">
                         <User size={16} />
-                        <span className="text-xs font-bold uppercase tracking-widest">{courseStats[selectedCourse.id] || 0} Enrolled</span>
+                        <span className="text-xs font-bold uppercase tracking-widest">{enrolledStudents.length} Enrolled</span>
                       </div>
                     </div>
                     <p className="text-text-muted text-sm leading-relaxed mb-8">
@@ -807,13 +852,17 @@ export default function Courses() {
                       </div>
 
                       <div className="space-y-4">
-                        {selectedCourse.notices.length > 0 ? (
-                          selectedCourse.notices.map((notice) => (
+                        {courseAnnouncements.length > 0 ? (
+                          courseAnnouncements.map((notice) => (
                             <div key={notice.id} className="p-4 bg-warning/5 rounded-md border border-warning/20 relative overflow-hidden group">
                               <div className="absolute top-0 left-0 w-1 h-full bg-warning opacity-50" />
                               <div className="flex justify-between items-start mb-2">
                                 <span className="text-[10px] font-black text-warning uppercase tracking-widest bg-warning/10 px-2 py-0.5 rounded">Update</span>
-                                <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest">{notice.date}</span>
+                                {notice.createdAt && (
+                                  <span className="text-[9px] text-text-muted font-bold uppercase tracking-widest">
+                                    {new Date(notice.createdAt.seconds * 1000).toLocaleDateString()}
+                                  </span>
+                                )}
                               </div>
                               <p className="text-sm text-text-muted group-hover:text-text-main transition-colors leading-relaxed">
                                 {notice.content}
@@ -855,7 +904,7 @@ export default function Courses() {
                       
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-text-muted">
                         <User size={12} className="text-warning" />
-                        <span>{selectedCourse.price === 0 ? "1.2k+ Enrolled" : "Waitlist Open"}</span>
+                        <span>{enrolledStudents.length} Enrolled</span>
                       </div>
                     </div>
 

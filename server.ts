@@ -8,6 +8,8 @@ import admin from 'firebase-admin';
 import { getFirestore } from 'firebase-admin/firestore';
 import fs from 'fs';
 
+import { COURSES } from './src/constants.js';
+
 const __filename = typeof process !== 'undefined' && process.argv[1] ? process.argv[1] : '';
 const currentDir = typeof __dirname !== 'undefined' ? __dirname : (typeof process !== 'undefined' ? process.cwd() : '');
 const isProd = process.env.NODE_ENV === "production";
@@ -142,12 +144,33 @@ async function startServer() {
     }
   });
 
+
   // Vite middleware for development
   let viteDevServer: any = null;
 
-  // Intercept declassified forensic cases for social media sharing cards & embed previews
-  app.get("/cases", async (req, res, next) => {
-    const caseId = req.query.case as string;
+  // Serve static files / Vite middleware FIRST
+  if (!isProd) {
+    viteDevServer = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(viteDevServer.middlewares);
+  } else {
+    app.use(express.static(buildPath));
+  }
+
+  // Intercept all HTML requests for social media sharing cards & embed previews
+  // This must be AFTER static files are handled
+  app.get('*', async (req, res, next) => {
+    // We only want to handle GET requests for HTML, and avoid assets
+    if (req.method !== 'GET') {
+      return next();
+    }
+    
+    // Only intercept paths that don't have a file extension OR specifically .html
+    if (req.path.includes('.') && !req.path.endsWith('.html')) {
+        return next();
+    }
     
     const indexPath = isProd 
       ? path.join(buildPath, 'index.html') 
@@ -160,47 +183,80 @@ async function startServer() {
     try {
       let html = fs.readFileSync(indexPath, 'utf-8');
       
-      if (caseId) {
-        try {
+      let title = 'ForenClue | Forensic EdTech Mastery';
+      let summary = "ForenClue - India's premier forensic science edtech platform. Master forensic analysis, cybersecurity, and investigations.";
+      let image = 'https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj7yfh9aP-3k7exKSgvW9ynV7lb9j62shvwJrpkiEi_9yiWUSxntW5Poc-MOXQCA0fd635VLo8C35glEPFtlSByqxDDepzEAX6D5T4SzFX-8fyKDIoo7_wV3EXH6u-UDF6P344Q4RRlRFY-qfqITWnuSXa7feb89eDlR9SCODoodogdY89rBez2K7fOiQI/s372/4b5616a4-6069-44a7-ba52-88f965165067.png';
+      
+      const fullUrl = `https://${req.get('host')}${req.originalUrl}`;
+
+      try {
+        if (req.path === '/cases' && req.query.case) {
           const dbAdmin = getDbAdmin();
-          const caseDoc = await dbAdmin.collection('cases').doc(caseId).get();
-          
+          const caseDoc = await dbAdmin.collection('cases').doc(req.query.case as string).get();
           if (caseDoc.exists) {
             const data = caseDoc.data();
             if (data) {
-              const title = data.title || 'Forensic Case Dossier';
-              const summary = data.summary || 'Declassified forensic study on ForenClue';
-              const image = data.image || '';
-              const fullUrl = `https://${req.get('host')}${req.originalUrl}`;
-
-              // Make sure the image is fully qualified / absolute
-              let ogImageUrl = image;
-              if (ogImageUrl && !ogImageUrl.startsWith('http://') && !ogImageUrl.startsWith('https://')) {
-                ogImageUrl = `https://${req.get('host')}${ogImageUrl}`;
-              }
-
-              // Dynamic meta tags injection
-              const metaTags = `
-    <!-- Dynamic social media preview tags -->
-    <meta property="og:title" content="${title.replace(/"/g, '&quot;')} | ForenClue Case Study" />
-    <meta property="og:description" content="${summary.replace(/"/g, '&quot;')}" />
-    <meta property="og:image" content="${ogImageUrl}" />
-    <meta property="og:url" content="${fullUrl}" />
-    <meta property="og:type" content="article" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')} | ForenClue Case Study" />
-    <meta name="twitter:description" content="${summary.replace(/"/g, '&quot;')}" />
-    <meta name="twitter:image" content="${ogImageUrl}" />
-              `;
-
-              html = html.replace('<head>', `<head>${metaTags}`);
-              html = html.replace(/<title>.*?<\/title>/, `<title>${title} | ForenClue Archive</title>`);
+              title = data.title ? `${data.title} | ForenClue Archive` : title;
+              summary = data.summary || summary;
+              if (data.image) image = data.image;
             }
           }
-        } catch (dbError) {
-          console.error("Error fetching case details for preview metadata:", dbError);
+        } 
+        else if (req.path === '/courses' && req.query.id) {
+           const courseId = Number(req.query.id);
+           // Try to find course in database
+           const dbAdmin = getDbAdmin();
+           const courseDocs = await dbAdmin.collection('courses').where('id', '==', courseId).get();
+           if (!courseDocs.empty) {
+              const data = courseDocs.docs[0].data();
+              if (data) {
+                title = data.title ? `${data.title} | ForenClue` : title;
+                summary = data.description || summary;
+                if (data.thumbnail) image = data.thumbnail;
+                else if (data.image) image = data.image;
+              }
+           } else {
+             // Let's attempt to use the static compiler constants
+             try {
+               const course = COURSES.find((c: any) => c.id === courseId);
+               if (course) {
+                 title = course.title ? `${course.title} | ForenClue` : title;
+                 summary = course.description || summary;
+                 if (course.thumbnail) image = course.thumbnail;
+               }
+             } catch (e) {
+               console.warn("Could not load dynamic constants fallback", e);
+             }
+           }
         }
+      } catch (dbError) {
+        console.error("Error fetching preview metadata:", dbError);
       }
+
+      // Format image URL
+      let ogImageUrl = image;
+      if (ogImageUrl && !ogImageUrl.startsWith('http://') && !ogImageUrl.startsWith('https://')) {
+        ogImageUrl = `https://${req.get('host')}${ogImageUrl}`;
+      }
+
+      // Dynamic meta tags injection
+      const metaTags = `
+    <!-- Dynamic social media preview tags -->
+    <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta property="og:description" content="${summary.replace(/"/g, '&quot;')}" />
+    <meta property="og:image" content="${ogImageUrl}" />
+    <meta property="og:image:secure_url" content="${ogImageUrl}" />
+    <meta property="og:url" content="${fullUrl}" />
+    <meta property="og:type" content="${req.path === '/cases' || req.path === '/courses' ? 'article' : 'website'}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:description" content="${summary.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:image" content="${ogImageUrl}" />
+    `;
+
+      html = html.replace('<head>', `<head>\n${metaTags}`);
+      html = html.replace(/<title>.*?<\/title>/, `<title>${title}</title>`);
+      html = html.replace(/<meta name="description".*?>/i, ''); // Remove existing static description so no conflict
 
       if (!isProd && viteDevServer) {
         html = await viteDevServer.transformIndexHtml(req.originalUrl, html);
@@ -210,28 +266,16 @@ async function startServer() {
       res.send(html);
       return;
     } catch (err) {
-      console.error("Error processing case preview server-side:", err);
-      next();
+      console.error("Error processing preview server-side:", err);
+      // Fallback in production if index.html can't be served, but it was already checked.
+      // In dev, let next() handle it if it fails.
+      if (isProd) {
+        res.status(500).send("Server error");
+      } else {
+        next();
+      }
     }
   });
-
-  if (!isProd) {
-    viteDevServer = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    });
-    app.use(viteDevServer.middlewares);
-  } else {
-    app.use(express.static(buildPath));
-    app.get('*', (req, res) => {
-      const indexPath = path.join(buildPath, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(500).send(`Server configuration error: Could not find index.html at ${indexPath}. Please ensure 'npm run build' executed correctly.`);
-      }
-    });
-  }
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

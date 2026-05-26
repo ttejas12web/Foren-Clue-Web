@@ -1,0 +1,65 @@
+src/pages/CoursePlayer.tsx:566:                  <div key={module.id} className="mb-6">:
+src/pages/CoursePlayer.tsx:598:                          key={lesson.id}:
+src/pages/CoursePlayer.tsx:820:                      key={t}:
+src/pages/CoursePlayer.tsx:916:                        <div key={notice.id} className="p-6 bg-warning/5 border border-warning/10 rounded-lg relative group">:
+src/pages/CoursePlayer.tsx:1128:                     <div key={i} className="bg-black/5 dark:bg-white/2 border border-black/10 dark
+src/pages/Admin.tsx:721:                            <div key={mod.id} className="p-3 bg-surface border border-black/5 dark:border-white/5 rounded-lg space-y-3">
+src/pages/Admin.tsx:742:                                  <div key={les.id} className="grid grid-cols-1 md:grid-cols-3 gap-2 p-2 bg-base/50 rounded border border-black/5 dark
+src/pages/Admin.tsx:818:                            <div key={c.docId} className="flex items-center justify-between p-3 bg-base border border-black/5 dark:border-white/5 rounded-xl">
+src/pages/Admin.tsx:1014:                            <div key={b.docId} className="flex items-center justify-between p-3 bg-base border border-black/5 dark:border-white/5 rounded-xl">
+src/pages/Admin.tsx:1071:                            <div key={doubt.id} className="flex items-center justify-between p-3 bg-base border border-black/5 dark:border-white/5 rounded-xl">
+src/pages/Cases.tsx:198:                    key={t}:
+src/pages/Cases.tsx:224:                key={item.id}:
+src/pages/Cases.tsx:378:                          <span key={l} className="px-3 py-1 bg-black/5 dark:bg-white/5 border border-black/10 dark
+src/pages/Cases.tsx:436:                                  key={idx} :
+src/pages/Cases.tsx:471:                              <div key={idx} className="flex items-center gap-3 p-3 bg-surface border border-black/10 dark:border-white/5 rounded-xl">
+src/pages/Cases.tsx:488:                                key={idx} :
+src/pages/Community.tsx:391:                <option key={cat} value={cat}>{cat}</option>:
+src/pages/Community.tsx:405:                key={cat}:
+src/pages/Community.tsx:431:                  key={doubt.id} :
+src/pages/Community.tsx:497:                      <option key={cat} value={cat} className="bg-base">{cat}</option>:
+src/pages/Community.tsx:776:                  <option key={cat} value={cat} className="bg-base">{cat}</option>:
+src/pages/Community.tsx:1151:            key={comment.id} :
+src/pages/Careers.tsx:47:                  <div key={path} className="p-4 bg-base border border-black/10 dark:border-white/5 flex items-center gap-3">
+src/pages/MyDoubts.tsx:185:                key={doubt.id} :
+src/pages/Home.tsx:204:                  key={i}:
+src/pages/Home.tsx:329:               <div key={i} className="bg-crust/5 p-6 rounded-lg flex flex-col justify-between">:
+src/pages/Home.tsx:333:                       <svg key={j} className="w-4 h-4 fill-current" viewBox="0 0 20 20">:
+src/pages/Services.tsx:24:          <div key={i} className="bg-surface p-10 border border-black/10 dark:border-white/5 hover
+src/pages/Profile.tsx:186:                  <span key={i} className="px-3 py-1 bg-warning/10 border border-warning/20 text-warning text-[10px] font-black uppercase tracking-widest rounded-full flex items-center gap-1">:
+src/pages/Profile.tsx:470:                    key={course.id}:
+src/pages/Profile.tsx:537:                    key={doubt.id}:
+src/pages/Profile.tsx:580:                    key={course.id}:
+src/pages/Profile.tsx:630:                 <div key={i} className={`p-4 rounded-lg border text-center transition-all ${:
+src/pages/About.tsx:67:            <p key={i} className="text-text-muted shadow-black drop-shadow-sm text-sm">&bull; {point}</p>:
+src/pages/About.tsx:168:            <TeamCard key={i} member={member} />:
+src/pages/Dashboard.tsx:156:                    <div key={course.id} className="bg-surface/50 border border-black/10 dark:border-white/5 p-4 rounded-lg flex flex-col md
+src/pages/Dashboard.tsx:241:                    key={course.id} :
+src/pages/EBooks.tsx:156:                key={tab.id}:
+src/pages/EBooks.tsx:184:                    <ResourceCard key={book.id} item={book} icon={BookOpen} />:
+src/pages/EBooks.tsx:203:                    <ResourceCard key={note.id} item={note} icon={FileText} />:
+src/pages/EBooks.tsx:222:                    <ResourceCard key={paper.id} item={paper} icon={HelpCircle} />:
+src/pages/EBooks.tsx:241:                    <ResourceCard key={item.id} item={item} icon={Archive} />:
+src/pages/Courses.tsx:496:                    key={course.id} :
+src/pages/Courses.tsx:581:              <div key={level} className="mb-20 relative w-full">:
+src/pages/Courses.tsx:594:                      <div key={course.id} className={`flex flex-col md:flex-row items-center gap-8 ${idx % 2 === 0 ? 'md
+src/pages/Courses.tsx:837:                          <div key={index} className="flex items-start gap-4 p-4 bg-black/5 dark:bg-white/2 rounded-md border border-black/10 dark
+src/pages/Courses.tsx:857:                            <div key={notice.id} className="p-4 bg-warning/5 rounded-md border border-warning/20 relative overflow-hidden group">:
+src/pages/Courses.tsx:1001:                             key={c.id} :
+src/components/ui/CaseEditorModal.tsx:316:                  <div key={i} className="flex gap-4 p-3 bg-surface border border-white/10 rounded-xl relative group items-center">:
+src/components/ui/CaseEditorModal.tsx:355:                  <div key={i} className="relative group p-2 bg-white/5 rounded border border-white/10 text-xs">:
+src/components/ui/CaseEditorModal.tsx:362:               {newAttachmentFiles.map(f => <div key={f.name} className="p-2 bg-black/10 dark:bg-white/10 text-xs rounded border border-black/20 dark
+src/components/ui/CrimeSceneViewer.tsx:432:             <mesh key={`${x}-${z}`} position={[x, 0.4, z]} castShadow>:
+src/components/ui/CrimeSceneViewer.tsx:696:        <group key={`${item.id}-${idx}`} position={item.position as [number, number, number]}>:
+src/components/ui/CrimeSceneViewer.tsx:889:                  key={i} :
+src/components/ui/CrimeSceneViewer.tsx:1013:              key={`${item.id}-${idx}`} :
+src/components/ui/CrimeTape.tsx:23:          <div key={i} className="flex items-center">:
+src/components/ui/ThreeDElement.tsx:25:      <group key={i} position={[0, y, 0]}>:
+src/components/ui/ThreeDElement.tsx:121:          key={i}:
+src/components/ui/LectureQna.tsx:92:           <div key={idx} className="bg-base p-3 rounded-lg flex justify-between group">:
+src/components/ui/LectureQna.tsx:196:                key={qna.id}:
+src/components/layout/Navbar.tsx:77:                key={link.path}:
+src/components/layout/Navbar.tsx:173:                  key={link.path}:
+src/components/Quiz.tsx:214:          key={currentQuestion}:
+src/components/Quiz.tsx:247:                  key={i}:
+src/contexts/AuthContext.tsx:337:                  key={i}:

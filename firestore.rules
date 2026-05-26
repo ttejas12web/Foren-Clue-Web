@@ -70,6 +70,13 @@ service cloud.firestore {
         && data.pdfUrl is string && data.pdfUrl.size() <= 2000;
     }
 
+    function isValidAnnouncement(data) {
+      return data.keys().hasAll(['courseId', 'content', 'createdAt'])
+        && data.courseId is number
+        && data.content is string && data.content.size() <= 5000
+        && data.createdAt is timestamp;
+    }
+
     function isValidWebsiteText(data) {
       return data.keys().hasAll(['text'])
         && data.text is string && data.text.size() <= 5000;
@@ -92,6 +99,13 @@ service cloud.firestore {
     match /ebooks/{ebookId} {
       allow read: if true;
       allow create, update: if isAdminEmail() && isValidEbook(incoming());
+      allow delete: if isAdminEmail();
+    }
+
+    // --- Announcements ---
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create, update: if isAdminEmail() && isValidAnnouncement(incoming());
       allow delete: if isAdminEmail();
     }
 
@@ -133,6 +147,19 @@ service cloud.firestore {
     match /courseOverrides/{courseId} {
       allow read: if true;
       allow write: if isAdminEmail();
+    }
+
+    // --- Lecture QnA ---
+    match /lectureQna/{qnaId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && existing().authorId == request.auth.uid;
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn();
+        allow update, delete: if isSignedIn() && existing().authorId == request.auth.uid;
+      }
     }
 
     // --- Community Doubts ---

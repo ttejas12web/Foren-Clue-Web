@@ -24,7 +24,7 @@ import {
   Target,
   Share2,
   Heart,
-  Twitter,
+  Instagram,
   MessageCircle,
   Copy,
   Heart as HeartIcon,
@@ -41,6 +41,7 @@ import { db } from '@/lib/firebase';
 import { doc, setDoc, updateDoc, serverTimestamp, onSnapshot, getDoc } from 'firebase/firestore';
 import { handleFirestoreError, OperationType } from "@/lib/firestoreUtils";
 import { LessonQuiz } from '@/components/Quiz';
+import { LectureQna } from '@/components/ui/LectureQna';
 import { 
   PieChart, 
   Pie, 
@@ -75,68 +76,113 @@ export default function CoursePlayer() {
   const [courseOverrides, setCourseOverrides] = useState<any>(null);
 
   useEffect(() => {
+    let active = true;
+    let unsub: (() => void) | null = null;
+
     if (courseId) {
-      let foundCourse = COURSES.find(c => c.id === parseInt(courseId));
-      if (!foundCourse) {
-        // Look up dynamically inside Firestore
-        getDoc(doc(db, 'courses', courseId))
-          .then((snap) => {
-            if (snap.exists()) {
-              const gotCourse = snap.data() as Course;
-              setCourse(gotCourse);
-              if (gotCourse.modules?.length > 0 && gotCourse.modules[0].lessons?.length > 0) {
-                setActiveLesson(gotCourse.modules[0].lessons[0]);
-              }
-            } else {
-              navigate('/courses');
+      const init = async () => {
+        let baseCourse = COURSES.find(c => c.id === parseInt(courseId)) || null;
+        if (!baseCourse) {
+          try {
+            const snap = await getDoc(doc(db, 'courses', courseId));
+            if (snap.exists() && active) {
+              baseCourse = { id: parseInt(courseId), ...snap.data() } as Course;
             }
-          })
-          .catch(() => {
-            navigate('/courses');
-          });
-      } else {
-        setCourse(foundCourse);
-        if (foundCourse.modules.length > 0 && foundCourse.modules[0].lessons.length > 0) {
-          setActiveLesson(foundCourse.modules[0].lessons[0]);
+          } catch (e) {
+            console.error("Failed to fetch course", e);
+          }
         }
-      }
-      
-      const unsub = onSnapshot(doc(db, 'courseOverrides', courseId), (docSnap) => {
-        if (docSnap.exists() && foundCourse) {
-          const overrides = docSnap.data();
+
+        if (!baseCourse) {
+          if (active) navigate('/courses');
+          return;
+        }
+
+        if (active) {
+          setCourse(baseCourse);
+          if (baseCourse.modules?.length > 0 && baseCourse.modules[0].lessons?.length > 0) {
+            setActiveLesson(baseCourse.modules[0].lessons[0]);
+          }
+        }
+
+        const currentCourseStatic = baseCourse;
+
+        unsub = onSnapshot(doc(db, 'courseOverrides', courseId), (docSnap) => {
+          if (!active) return;
+          const overrides = docSnap.exists() ? docSnap.data() : {};
           setCourseOverrides(overrides);
           
-          let updatedCourse = { ...foundCourse };
+          let updatedCourse = { ...currentCourseStatic };
           if (overrides.description) {
             updatedCourse.description = overrides.description;
           }
           if (overrides.notices) {
-             updatedCourse.notices = [...foundCourse.notices, ...overrides.notices];
+            updatedCourse.notices = [...(currentCourseStatic.notices || []), ...(overrides.notices || [])];
           }
-          if (overrides.lessons) {
-             updatedCourse.modules = foundCourse.modules.map(m => ({
-               ...m,
-               lessons: m.lessons.map(l => {
-                  const lessonOverride = overrides.lessons?.[l.id];
-                  if (lessonOverride) {
-                     return { ...l, ...lessonOverride };
-                  }
-                  return l;
-               })
-             }));
-          }
+          
+          const mergedModules = JSON.parse(JSON.stringify(currentCourseStatic.modules || []));
+          const overrideModules = overrides.modules || [];
+          overrideModules.forEach((oM: any) => {
+            const existingIndex = mergedModules.findIndex((m: any) => m.id === oM.id);
+            if (existingIndex > -1) {
+              if (oM.title) mergedModules[existingIndex].title = oM.title;
+              const baseLessons = mergedModules[existingIndex].lessons || [];
+              const overrideLessons = oM.lessons || [];
+              overrideLessons.forEach((oL: any) => {
+                const existingLIdx = baseLessons.findIndex((l: any) => l.id === oL.id);
+                if (existingLIdx > -1) {
+                  baseLessons[existingLIdx] = { ...baseLessons[existingLIdx], ...oL };
+                } else {
+                  baseLessons.push(oL);
+                }
+              });
+              mergedModules[existingIndex].lessons = baseLessons;
+            } else {
+              mergedModules.push(oM);
+            }
+          });
+
+          updatedCourse.modules = mergedModules.map((m: any) => ({
+            ...m,
+            lessons: (m.lessons || []).map((l: any) => {
+              const lessonOverride = overrides.lessons?.[l.id];
+              if (lessonOverride) {
+                 return { ...l, ...lessonOverride };
+              }
+              return l;
+            })
+          }));
+
           setCourse(updatedCourse);
           setActiveLesson(prev => {
-             if (!prev) return prev;
-             const newLessonOverride = overrides.lessons?.[prev.id];
-             return newLessonOverride ? { ...prev, ...newLessonOverride } : prev;
+            if (!prev) {
+              if (updatedCourse.modules?.length > 0 && updatedCourse.modules[0].lessons?.length > 0) {
+                return updatedCourse.modules[0].lessons[0];
+              }
+              return null;
+            }
+            let foundActive: any = null;
+            for (const m of updatedCourse.modules) {
+              const found = m.lessons.find((l: any) => l.id === prev.id);
+              if (found) {
+                foundActive = found;
+                break;
+              }
+            }
+            return foundActive || { ...prev, ...(overrides.lessons?.[prev.id] || {}) };
           });
-        }
-      }, (error) => {
-        console.warn("Could not load course overrides:", error);
-      });
-      return () => unsub();
+        }, (error) => {
+          console.warn("Could not load course overrides:", error);
+        });
+      };
+
+      init();
     }
+
+    return () => {
+      active = false;
+      if (unsub) unsub();
+    };
   }, [courseId, navigate]);
 
   // Security Check: Ensure user has access
@@ -239,13 +285,15 @@ export default function CoursePlayer() {
     }
   };
 
-  const handleSocialShare = (platform: 'twitter' | 'whatsapp' | 'copy') => {
+  const handleSocialShare = (platform: 'instagram' | 'whatsapp' | 'copy') => {
     if (!course) return;
     const url = `${window.location.origin}/courses?id=${course.id}`;
     const text = `I'm investigating ${course.title}! Join me at Forensic Insights Lab.`;
     
-    if (platform === 'twitter') {
-      window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+    if (platform === 'instagram') {
+      navigator.clipboard.writeText(url);
+      alert("Link copied! Open Instagram to paste and share.");
+      window.open(`https://www.instagram.com/`, '_blank');
     } else if (platform === 'whatsapp') {
       window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
     } else {
@@ -260,7 +308,10 @@ export default function CoursePlayer() {
   const totalLessons = course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
   const progressPercent = Math.round((completedLessons.length / totalLessons) * 100);
 
-  const saveCourseOverride = async (type: 'lesson_video' | 'lesson_notes' | 'notice' | 'delete_notice' | 'description' | 'quiz', data: any) => {
+  const saveCourseOverride = async (
+    type: 'lesson_video' | 'lesson_notes' | 'notice' | 'delete_notice' | 'description' | 'quiz' | 'edit_lecture_title' | 'add_lecture' | 'add_week',
+    data: any
+  ) => {
     if (!isAdmin || !courseId) return;
     try {
       const ref = doc(db, 'courseOverrides', courseId);
@@ -269,18 +320,58 @@ export default function CoursePlayer() {
       const currentLessons = courseOverrides?.lessons || {};
       const currentNotices = courseOverrides?.notices || [];
 
-      if (type === 'lesson_video' || type === 'lesson_notes' || type === 'quiz') {
+      if (type === 'lesson_video' || type === 'lesson_notes' || type === 'quiz' || type === 'edit_lecture_title') {
         const { lessonId, value } = data;
         let lessonUpdate = { ...(currentLessons[lessonId] || {}) };
         if (type === 'lesson_video') lessonUpdate.videoUrl = value;
         if (type === 'lesson_notes') lessonUpdate.notesUrl = value;
         if (type === 'quiz') lessonUpdate.quizQuestions = value;
+        if (type === 'edit_lecture_title') lessonUpdate.title = value;
         
         updatePayload = {
           lessons: {
             ...currentLessons,
             [lessonId]: lessonUpdate
           }
+        };
+      } else if (type === 'add_week') {
+        const { title } = data;
+        const currentModules = courseOverrides?.modules || [];
+        const newModule = {
+          id: `module_${Date.now()}`,
+          title: title,
+          lessons: []
+        };
+        updatePayload = {
+          modules: [...currentModules, newModule]
+        };
+      } else if (type === 'add_lecture') {
+        const { moduleId, lessonTitle, lessonDuration, lessonVideoUrl } = data;
+        const currentModules = [...(courseOverrides?.modules || [])];
+        const newLesson = {
+          id: `lesson_${Date.now()}`,
+          title: lessonTitle,
+          duration: lessonDuration || '10:00',
+          videoUrl: lessonVideoUrl || 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+        };
+
+        const existingOverridenModuleIdx = currentModules.findIndex((m: any) => m.id === moduleId);
+        if (existingOverridenModuleIdx > -1) {
+          const moduleToUpdate = { ...currentModules[existingOverridenModuleIdx] };
+          moduleToUpdate.lessons = [...(moduleToUpdate.lessons || []), newLesson];
+          currentModules[existingOverridenModuleIdx] = moduleToUpdate;
+        } else {
+          const baseM = course.modules.find((m: any) => m.id === moduleId);
+          const baseLessons = baseM ? [...(baseM.lessons || [])] : [];
+          currentModules.push({
+            id: moduleId,
+            title: baseM ? baseM.title : '',
+            lessons: [...baseLessons, newLesson]
+          });
+        }
+
+        updatePayload = {
+          modules: currentModules
         };
       } else if (type === 'notice') {
         updatePayload = {
@@ -472,15 +563,39 @@ export default function CoursePlayer() {
 
               <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 {course.modules.map((module, mIdx) => (
-                  <div key={module.id} className="mb-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <ChevronLeft size={14} className="text-warning -rotate-90" />
-                      <h3 className="text-[11px] font-black uppercase tracking-wider text-text-muted">{module.title}</h3>
+                  <div key={`module-${module.id}-${mIdx}`} className="mb-6">
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <ChevronLeft size={14} className="text-warning -rotate-90" />
+                        <h3 className="text-[11px] font-black uppercase tracking-wider text-text-muted">{module.title}</h3>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const lTitle = prompt("Enter Title for New Lecture:");
+                            if (lTitle) {
+                              const lDuration = prompt("Enter Lecture Duration (e.g., '12:30'):", "10:00") || "10:00";
+                              const lVid = prompt("Enter YouTube Embed video URL (or use default placeholder):", "https://www.youtube.com/embed/dQw4w9WgXcQ") || "https://www.youtube.com/embed/dQw4w9WgXcQ";
+                              saveCourseOverride('add_lecture', {
+                                moduleId: module.id,
+                                lessonTitle: lTitle,
+                                lessonDuration: lDuration,
+                                lessonVideoUrl: lVid
+                              });
+                            }
+                          }}
+                          className="text-[9px] text-warning bg-warning/10 hover:bg-warning/30 px-2 py-0.5 rounded border border-warning/30 font-black uppercase tracking-widest transition-all"
+                          title="Add Lecture"
+                        >
+                          + Add Lecture
+                        </button>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      {module.lessons.map((lesson) => (
+                      {module.lessons.map((lesson, lIdx) => (
                         <div 
-                          key={lesson.id}
+                          key={`lesson-${lesson.id}-${lIdx}`}
                           onClick={() => {
                             setActiveLesson(lesson);
                             if (window.innerWidth < 768) {
@@ -501,9 +616,26 @@ export default function CoursePlayer() {
                           </div>
                           <div className="flex-1 text-left">
                             <div className="flex items-center justify-between">
-                              <p className={`text-xs font-bold leading-tight ${activeLesson?.id === lesson.id ? 'text-text-main' : 'text-text-muted group-hover:text-text-main'}`}>
-                                {lesson.title}
-                              </p>
+                              <div className="flex items-center gap-1.5 flex-1 min-w-0 pr-1">
+                                <p className={`text-xs font-bold leading-tight truncate ${activeLesson?.id === lesson.id ? 'text-text-main' : 'text-text-muted group-hover:text-text-main'}`}>
+                                  {lesson.title}
+                                </p>
+                                {isAdmin && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newTitle = prompt("Edit Lecture Title:", lesson.title);
+                                      if (newTitle) {
+                                        saveCourseOverride('edit_lecture_title', { lessonId: lesson.id, value: newTitle });
+                                      }
+                                    }}
+                                    className="p-1 text-warning/70 hover:text-warning transition-colors flex-shrink-0"
+                                    title="Edit Lecture Title"
+                                  >
+                                    <Pencil size={10} />
+                                  </button>
+                                )}
+                              </div>
                               <button
                                 onClick={(e) => { e.stopPropagation(); toggleLessonBookmark(lesson.id); }}
                                 disabled={isLessonBookmarking === lesson.id}
@@ -526,6 +658,22 @@ export default function CoursePlayer() {
                     </div>
                   </div>
                 ))}
+
+                {isAdmin && (
+                  <div className="mt-6 pt-4 border-t border-black/10 dark:border-white/5">
+                    <button
+                      onClick={() => {
+                        const newWTitle = prompt("Enter Title for New Week/Module (e.g., 'Week-5 digital forensics'):");
+                        if (newWTitle) {
+                          saveCourseOverride('add_week', { title: newWTitle });
+                        }
+                      }}
+                      className="w-full bg-warning hover:bg-warning/80 text-crust py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      <Plus size={14} /> Add Week / Module
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="p-6 border-t border-black/10 dark:border-white/5 bg-base/30">
@@ -587,11 +735,11 @@ export default function CoursePlayer() {
                             className="absolute right-0 top-full mt-2 bg-base border border-black/10 dark:border-white/10 rounded-lg shadow-2xl p-2 z-50 flex flex-col gap-1 min-w-[120px]"
                           >
                             <button 
-                              onClick={() => handleSocialShare('twitter')}
+                              onClick={() => handleSocialShare('instagram')}
                               className="flex items-center gap-3 px-3 py-2 hover:bg-black/5 dark:bg-white/5 rounded text-[10px] font-black uppercase tracking-widest text-text-muted hover:text-text-main transition-colors"
                             >
-                              <Twitter size={12} className="text-blue-400" />
-                              Twitter
+                              <Instagram size={12} className="text-pink-500" />
+                              Instagram
                             </button>
                             <button 
                               onClick={() => handleSocialShare('whatsapp')}
@@ -853,16 +1001,9 @@ export default function CoursePlayer() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="flex flex-col items-center justify-center p-12 text-center"
+                      className="p-6 text-left"
                      >
-                        <div className="w-16 h-16 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center mb-4">
-                           <MessageSquare size={24} className="text-text-muted" />
-                        </div>
-                        <h4 className="text-lg font-black uppercase tracking-widest text-text-main mb-2">Forensic Community Forum</h4>
-                        <p className="text-text-muted text-sm max-w-sm mb-6">Connect with fellow investigators, share insights, and clear your investigative doubts.</p>
-                        <button className="bg-black/5 dark:bg-white/5 hover:bg-black/5 dark:bg-white/10 text-text-main px-6 py-2 border border-black/10 dark:border-white/10 rounded-lg text-xs font-black uppercase tracking-widest transition-all">
-                           Open Forensic Forum
-                        </button>
+                       <LectureQna courseId={courseId || ""} lessonId={activeLesson?.id || ""} />
                      </motion.div>
                   )}
 

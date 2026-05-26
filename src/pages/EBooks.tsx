@@ -51,6 +51,11 @@ export default function EBooks() {
       snapshot.forEach((docSnap) => {
         list.push({ id: docSnap.id, ...docSnap.data() });
       });
+      list.sort((a, b) => {
+        const timeA = (a.createdAt as any)?.seconds || 0;
+        const timeB = (b.createdAt as any)?.seconds || 0;
+        return timeB - timeA;
+      });
       setDbEBooks(list);
     }, (error) => {
       console.warn("Could not load dynamic eBooks:", error);
@@ -59,23 +64,23 @@ export default function EBooks() {
   }, []);
 
   const mergedBooks = [
+    ...dbEBooks.filter(item => item.tabCategory === 'books' || !item.tabCategory),
     ...resources.books,
-    ...dbEBooks.filter(item => item.tabCategory === 'books' || !item.tabCategory)
   ];
 
   const mergedNotes = [
+    ...dbEBooks.filter(item => item.tabCategory === 'notes'),
     ...resources.notes,
-    ...dbEBooks.filter(item => item.tabCategory === 'notes')
   ];
 
   const mergedPapers = [
+    ...dbEBooks.filter(item => item.tabCategory === 'papers'),
     ...resources.papers,
-    ...dbEBooks.filter(item => item.tabCategory === 'papers')
   ];
 
   const mergedOther = [
+    ...dbEBooks.filter(item => item.tabCategory === 'other'),
     ...resources.other,
-    ...dbEBooks.filter(item => item.tabCategory === 'other')
   ];
 
   // Function to filter items based on search query

@@ -140,6 +140,10 @@ export default function Cases() {
        if (!c.createdBy || !checkIsAdmin(c.createdBy)) return false;
        // user can see published, or admin can see all
        return c.status !== 'draft' || isAdmin;
+    }).sort((a, b) => {
+      const timeA = ((a as any).createdAt as any)?.seconds || 0;
+      const timeB = ((b as any).createdAt as any)?.seconds || 0;
+      return timeB - timeA;
     });
 
     return allCases.filter(c => {
@@ -173,7 +177,7 @@ export default function Cases() {
                 Case <span className="text-warning">Archive</span>
               </h1>
               <p className="text-lg text-text-muted max-w-xl font-medium">
-                Declassified forensic reports from landmark investigations around the globe.
+                Get the case studies to deep dive into forensic investigation
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -215,9 +219,9 @@ export default function Cases() {
 
           {/* Case Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredArchive.map((item) => (
+            {filteredArchive.map((item, idx) => (
               <motion.div 
-                key={item.id}
+                key={`case-${item.id}-${idx}`}
                 whileHover={{ y: -10 }}
                 onClick={() => setSelectedCase(item)}
                 className="bg-surface/50 border border-black/10 dark:border-white/5 rounded-3xl overflow-hidden hover:border-warning/30 transition-all cursor-pointer group shadow-xl"

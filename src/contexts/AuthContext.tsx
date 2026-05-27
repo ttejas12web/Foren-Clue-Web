@@ -365,17 +365,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   Investigating<span className="animate-pulse">...</span>
                 </motion.p>
               </div>
-              
-              <div className="flex items-center gap-4 md:gap-6">
-                <div className="flex items-center gap-2 text-[8px] md:text-[10px] font-black uppercase text-text-muted tracking-widest">
-                   <Activity size={10} className="text-warning md:size-3" />
-                   <span>Scanning DB</span>
-                </div>
-                <div className="flex items-center gap-2 text-[8px] md:text-[10px] font-black uppercase text-text-muted tracking-widest">
-                   <ShieldCheck size={10} className="text-warning md:size-3" />
-                   <span>Decrypting Auth</span>
-                </div>
-              </div>
             </div>
 
             {/* Evidence Marker Mockup */}

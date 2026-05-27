@@ -367,11 +367,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               </div>
             </div>
 
-            {/* Evidence Marker Mockup */}
-            <div className="absolute bottom-6 left-6 md:bottom-10 md:left-10 opacity-30 select-none scale-75 md:scale-100 origin-bottom-left">
-              <div className="bg-warning text-crust font-black text-[10px] p-1 px-2 mb-1">EVIDENCE MARKER</div>
-              <div className="text-warning font-black text-2xl md:text-4xl text-center md:text-left">01</div>
-            </div>
+
           </motion.div>
         ) : (
           <motion.div 

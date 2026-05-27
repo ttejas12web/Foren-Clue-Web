@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SEO } from "@/components/layout/SEO";
 import { MicroscopeViewer } from "@/components/ui/ThreeDElement";
 import { useAuth } from "@/contexts/AuthContext";
-import { doc, setDoc, arrayUnion, arrayRemove, serverTimestamp, updateDoc, collection, onSnapshot, increment, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, arrayUnion, arrayRemove, serverTimestamp, updateDoc, collection, onSnapshot, increment, query, where, getDocs } from "firebase/firestore";
 import { handleFirestoreError, OperationType } from "@/lib/firestoreUtils";
 import { db, auth } from "@/lib/firebase";
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -180,29 +180,39 @@ export default function Courses() {
       try {
         const userRef = doc(db, 'users', activeUser.uid);
         
+        // Safe check for user existence before setting or updating
+        let userSnap = null;
         try {
-          await updateDoc(userRef, {
-            purchasedCourses: arrayUnion(courseId),
+          userSnap = await getDoc(userRef);
+        } catch (snapErr) {
+          console.warn("User profile fetch failed, attempting backup flow:", snapErr);
+        }
+
+        if (!userSnap || !userSnap.exists()) {
+          // Document does not exist or fetch failed. Perform full creation.
+          await setDoc(userRef, {
+            uid: activeUser.uid,
+            email: activeUser.email || '',
+            displayName: activeUser.displayName || 'Investigator',
+            photoURL: activeUser.photoURL || '',
+            createdAt: serverTimestamp(),
+            purchasedCourses: [courseId],
+            bookmarks: [],
+            achievementTags: ['Forensic Novice'],
+            progress: {},
+            doubtsCount: 0,
+            commentsCount: 0,
             updatedAt: serverTimestamp()
           });
-        } catch (updateErr: any) {
-          if (updateErr.code === 'not-found') {
-            await setDoc(userRef, {
-              uid: activeUser.uid,
-              email: activeUser.email || '',
-              displayName: activeUser.displayName || 'Investigator',
-              photoURL: activeUser.photoURL || '',
-              createdAt: serverTimestamp(),
-              purchasedCourses: [courseId],
-              bookmarks: [],
-              achievementTags: ['Forensic Novice'],
-              progress: {},
-              doubtsCount: 0,
-              commentsCount: 0,
+        } else {
+          // Document exists. Safely append to existing document.
+          const data = userSnap.data();
+          const currentPurchased = data?.purchasedCourses || [];
+          if (!currentPurchased.includes(courseId)) {
+            await updateDoc(userRef, {
+              purchasedCourses: arrayUnion(courseId),
               updatedAt: serverTimestamp()
             });
-          } else {
-            throw updateErr;
           }
         }
 
@@ -295,29 +305,38 @@ export default function Courses() {
             if (verifyData.success) {
               try {
                 const userRef = doc(db, 'users', user.uid);
+                
+                // Safe check for user existence before update/set
+                let userSnap = null;
                 try {
-                  await updateDoc(userRef, {
-                    purchasedCourses: arrayUnion(courseId),
+                  userSnap = await getDoc(userRef);
+                } catch (snapErr) {
+                  console.warn("User profile fetch failed after payment:", snapErr);
+                }
+
+                if (!userSnap || !userSnap.exists()) {
+                  await setDoc(userRef, {
+                    uid: user.uid,
+                    email: user.email || '',
+                    displayName: user.displayName || 'Investigator',
+                    photoURL: user.photoURL || '',
+                    createdAt: serverTimestamp(),
+                    purchasedCourses: [courseId],
+                    bookmarks: [],
+                    achievementTags: ['Forensic Novice'],
+                    progress: {},
+                    doubtsCount: 0,
+                    commentsCount: 0,
                     updatedAt: serverTimestamp()
                   });
-                } catch (updateErr: any) {
-                  if (updateErr.code === 'not-found') {
-                    await setDoc(userRef, {
-                      uid: user.uid,
-                      email: user.email || '',
-                      displayName: user.displayName || 'Investigator',
-                      photoURL: user.photoURL || '',
-                      createdAt: serverTimestamp(),
-                      purchasedCourses: [courseId],
-                      bookmarks: [],
-                      achievementTags: ['Forensic Novice'],
-                      progress: {},
-                      doubtsCount: 0,
-                      commentsCount: 0,
+                } else {
+                  const data = userSnap.data();
+                  const currentPurchased = data?.purchasedCourses || [];
+                  if (!currentPurchased.includes(courseId)) {
+                    await updateDoc(userRef, {
+                      purchasedCourses: arrayUnion(courseId),
                       updatedAt: serverTimestamp()
                     });
-                  } else {
-                    throw updateErr;
                   }
                 }
         
@@ -931,7 +950,7 @@ export default function Courses() {
                         className="w-full py-4 bg-warning text-crust font-black uppercase tracking-[0.2em] rounded-md hover:bg-warning/90 shadow-[0_4px_20px_rgba(0,240,255,0.2)] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                       >
                         {purchasing === selectedCourse.id ? (
-                          <><Loader2 size={20} className="animate-spin" /> Analyzing Payment...</>
+                          <><Loader2 size={20} className="animate-spin" /> {selectedCourse.price === 0 ? "Enrolling Investigator..." : "Analyzing Payment..."}</>
                         ) : success === selectedCourse.id ? (
                           <><CheckCircle size={20} /> Access Granted!</>
                         ) : (

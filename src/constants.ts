@@ -49,7 +49,7 @@ export const COURSES: Course[] = [
       "Introduction to Forensic Laboratory Analysis"
     ],
     instructorBio: "Mrunmayee Bodhe is the CEO Of ForenClue Ventures, a passionate forensic enthusiast, and dedicated to making learning stress-free.",
-    thumbnail: "https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=800&auto=format&fit=crop",
+    thumbnail: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgmKqsV247zENKr8rUZCgF2dR_u91jYMEP6mJaWF010Jgsdi-zMXXcbXRbWUfD-JZ2vfri_NLWtBPVFTNI8CphwPqMb8eofX8sT75dRzOhR_z4KecBMMSMPrynFsztPmNbZBppXGQn3lAAJERzwyeMdc9gAyxFV9sgHtptG4yOMtNQznPolTH3tORuRPBI/s1534/B45FFD8B-3B72-4FAB-B779-F5DFE99BC86F.jpeg",
     notices: [
       { id: 1, date: "2024-03-20", content: "New module on 'Forensic Entomology' added. Check it out in the curriculum!" },
       { id: 2, date: "2024-03-15", content: "Live Q&A session scheduled for next Friday at 6 PM IST." }

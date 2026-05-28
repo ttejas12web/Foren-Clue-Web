@@ -91,6 +91,21 @@ export default function Courses() {
     });
   }, [allMergedCourses, searchTerm, selectedCategory]);
 
+  const [runningCourseAspectRatio, setRunningCourseAspectRatio] = useState<number | null>(null);
+
+  useEffect(() => {
+    const runningC = allMergedCourses.find(c => c.id === 1) || allMergedCourses[0];
+    if (runningC?.thumbnail) {
+      const img = new Image();
+      img.src = runningC.thumbnail;
+      img.onload = () => {
+        if (img.naturalWidth && img.naturalHeight) {
+          setRunningCourseAspectRatio(img.naturalWidth / img.naturalHeight);
+        }
+      };
+    }
+  }, [allMergedCourses]);
+
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'courseStats'), (snapshot) => {
       const stats: Record<number, number> = {};
@@ -517,11 +532,14 @@ export default function Courses() {
                     onClick={() => setSelectedCourse(course)}
                     className={`bg-surface border border-black/10 dark:border-white/5 overflow-hidden group hover:border-black/20 dark:hover:border-white/10 transition-colors flex flex-col shadow-sm rounded-xl cursor-pointer ${isComingSoon ? 'opacity-90 hover:opacity-100' : ''}`}
                   >
-                    <div className="h-48 relative overflow-hidden bg-black/5 dark:bg-white/5">
+                    <div 
+                      className="relative overflow-hidden bg-black/5 dark:bg-white/5 w-full"
+                      style={runningCourseAspectRatio ? { aspectRatio: `${runningCourseAspectRatio}` } : {}}
+                    >
                       <img 
                         src={course.thumbnail} 
                         alt={course.title} 
-                        className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isComingSoon ? 'filter saturate-75 contrast-95 group-hover:saturate-100 group-hover:contrast-100' : ''}`} 
+                        className={`w-full h-full ${course.id === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-105 transition-transform duration-500 ${isComingSoon ? 'filter saturate-75 contrast-95 group-hover:saturate-100 group-hover:contrast-100' : ''}`} 
                         referrerPolicy="no-referrer"
                       />
                       
@@ -617,8 +635,15 @@ export default function Courses() {
                             onClick={() => setSelectedCourse(course)}
                             className={`w-full max-w-sm bg-surface border border-black/10 dark:border-white/5 rounded-xl overflow-hidden cursor-pointer shadow-xl hover:border-warning/30 transition-colors group relative ${isComingSoon ? 'opacity-95' : ''}`}
                           >
-                            <div className="h-40 relative">
-                              <img src={course.thumbnail} alt={course.title} className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ${isComingSoon ? 'filter grayscale saturate-50' : ''}`} />
+                            <div 
+                              className="relative overflow-hidden w-full"
+                              style={runningCourseAspectRatio ? { aspectRatio: `${runningCourseAspectRatio}` } : {}}
+                            >
+                              <img 
+                                src={course.thumbnail} 
+                                alt={course.title} 
+                                className={`w-full h-full ${course.id === 1 ? 'object-contain' : 'object-cover'} group-hover:scale-110 transition-transform duration-700 ${isComingSoon ? 'filter grayscale saturate-50' : ''}`} 
+                              />
                               <div className="absolute inset-0 bg-base/40 group-hover:bg-warning/10 transition-colors"></div>
                               
                               {/* Overlay badges */}
@@ -790,6 +815,17 @@ export default function Courses() {
                   
                   <div className="relative z-10 flex-grow">
                     <EvidenceMarker number={selectedCourse.id < 10 ? `0${selectedCourse.id}` : selectedCourse.id} className="mb-6" />
+                    <div 
+                      className="mb-6 w-full rounded-lg overflow-hidden border border-black/10 dark:border-white/10 bg-black/20"
+                      style={runningCourseAspectRatio ? { aspectRatio: `${runningCourseAspectRatio}` } : {}}
+                    >
+                      <img 
+                        src={selectedCourse.thumbnail} 
+                        alt={selectedCourse.title} 
+                        className={`w-full h-full ${selectedCourse.id === 1 ? 'object-contain' : 'object-cover'}`}
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
                     <h2 className="text-3xl font-heading font-black text-text-main mb-4 uppercase leading-tight tracking-tight">
                       {selectedCourse.title}
                     </h2>

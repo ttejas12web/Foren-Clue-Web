@@ -252,7 +252,7 @@ The ForenClue Curriculum Board
 
                   {/* Title / Description under book */}
                   <h3 className="font-heading font-black text-lg mb-4 uppercase tracking-tight text-text-main">
-                    Forensic Careers Blueprint Book
+                    Forensic Investigation Handbook
                   </h3>
 
                   {/* Download / Notify Button with Newsletter subscription form */}

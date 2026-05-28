@@ -487,7 +487,7 @@ export default function Courses() {
           <h1 className="text-4xl md:text-6xl font-heading font-black mb-3 uppercase tracking-tight relative z-10">
             Explore <span className="text-warning">Courses</span>
           </h1>
-          <p className="text-base md:text-lg text-text-muted relative z-10">Explore Our MOst Structured Forensic And Skills Courses</p>
+          <p className="text-base md:text-lg text-text-muted relative z-10">Explore Our Most Structured Forensic And Skills Courses</p>
         </div>
 
         {/* View Mode Segmented Control */}

@@ -4,7 +4,19 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../../firebase-applet-config.json';
 
-const app = initializeApp(firebaseConfig);
+// Dynamically use the custom branded domain in production to replace the generic firebaseapp.com on Google Auth screen
+const getRuntimeConfig = () => {
+  const config = { ...firebaseConfig };
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'forensicspot.com' || hostname === 'www.forensicspot.com') {
+      config.authDomain = 'forensicspot.com';
+    }
+  }
+  return config;
+};
+
+const app = initializeApp(getRuntimeConfig());
 export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
 export const auth = getAuth(app);
 export let storage: any;

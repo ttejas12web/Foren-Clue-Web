@@ -129,7 +129,7 @@ export default function Profile() {
         <div className="bg-surface p-8 border border-black/10 dark:border-white/10 rounded-lg text-center max-w-md w-full">
           <BookOpen size={48} className="mx-auto text-warning mb-4" />
           <h2 className="text-2xl font-heading font-black mb-2 uppercase">Please Login</h2>
-          <p className="text-text-muted mb-6">You need to be signed in to view your profile and course progress.</p>
+          <p className="text-text-muted mb-6 animate-pulse">You need to be signed in to acces this feature.</p>
         </div>
       </div>
     );

@@ -10,6 +10,7 @@ import { Footer } from './components/layout/Footer';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { motion, AnimatePresence } from 'motion/react';
 import BookPopup from './components/ui/BookPopup';
+import { GoogleOneTap } from './components/ui/GoogleOneTap';
 
 import { Loader2, WifiOff } from 'lucide-react';
 
@@ -73,6 +74,7 @@ export default function App() {
       </AnimatePresence>
       <ScrollToTop />
       <BookPopup />
+      <GoogleOneTap />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/player/:courseId" element={<CoursePlayer />} />

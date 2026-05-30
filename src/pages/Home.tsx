@@ -6,7 +6,6 @@ import { ArrowRight, Search, ShieldAlert, BookOpen, Users, Star, Download } from
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
 import { EditableText } from '@/components/ui/EditableText';
 import { SEO } from '@/components/layout/SEO';
-// DNAViewer removed
 
 const MotionLink = motion.create(Link);
 
@@ -218,6 +217,8 @@ The ForenClue Curriculum Board
           </div>
         </div>
       </section>
+
+
 
       {/* Exclusive Forensic Handbook / Book Section */}
       <section id="book-mockup-section" className="py-24 bg-base relative overflow-hidden border-t border-black/10 dark:border-white/5">

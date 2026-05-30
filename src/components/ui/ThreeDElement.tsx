@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Environment, Float, Sphere, Cylinder, MeshDistortMaterial, Torus } from '@react-three/drei';
+import { Environment, Float, Sphere, Cylinder, MeshDistortMaterial, Torus, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 function DNAHelix() {
@@ -52,6 +52,7 @@ export function DNAViewer({ className }: { className?: string }) {
         <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
           <DNAHelix />
         </Float>
+        <OrbitControls enableZoom={true} enablePan={false} minDistance={4} maxDistance={15} />
         <Environment preset="city" />
       </Canvas>
     </div>
@@ -143,6 +144,7 @@ export function FlaskViewer({ className }: { className?: string }) {
         <Float speed={2.5} rotationIntensity={0.5} floatIntensity={1.5}>
           <FloatingFlask />
         </Float>
+        <OrbitControls enableZoom={true} enablePan={false} minDistance={4} maxDistance={15} />
         <Environment preset="city" />
       </Canvas>
     </div>
@@ -195,6 +197,7 @@ export function MagnifyingGlassViewer({ className }: { className?: string }) {
         <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
           <FloatingMagnifyingGlass />
         </Float>
+        <OrbitControls enableZoom={true} enablePan={false} minDistance={4} maxDistance={15} />
         <Environment preset="city" />
       </Canvas>
     </div>
@@ -271,6 +274,7 @@ export function MicroscopeViewer({ className }: { className?: string }) {
         <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
           <FloatingMicroscope />
         </Float>
+        <OrbitControls enableZoom={true} enablePan={false} minDistance={4} maxDistance={15} />
         <Environment preset="city" />
       </Canvas>
     </div>

@@ -242,6 +242,8 @@ async function startServer() {
       // Dynamic meta tags injection
       const metaTags = `
     <!-- Dynamic social media preview tags -->
+    <meta name="description" content="${summary.replace(/"/g, '&quot;')}" />
+    <link rel="canonical" href="${fullUrl}" />
     <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
     <meta property="og:description" content="${summary.replace(/"/g, '&quot;')}" />
     <meta property="og:image" content="${ogImageUrl}" />

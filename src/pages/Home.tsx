@@ -223,6 +223,7 @@ The ForenClue Curriculum Board
 
 
 
+
       {/* Exclusive Forensic Handbook / Book Section */}
       <section id="book-mockup-section" className="py-24 bg-base relative overflow-hidden border-t border-black/10 dark:border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

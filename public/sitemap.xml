@@ -1,92 +1,134 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
-  <!-- Primary Homepage -->
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://forenclue.in/</loc>
-    <lastmod>2026-05-25</lastmod>
+    <lastmod>2026-06-01T15:07:50.303Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
-  
-  <!-- About Us Page -->
-  <url>
-    <loc>https://forenclue.in/about</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Forensic Science Courses -->
-  <url>
-    <loc>https://forenclue.in/courses</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Declassified Cases / Solved Case Studies -->
   <url>
     <loc>https://forenclue.in/cases</loc>
-    <lastmod>2026-05-25</lastmod>
+    <lastmod>2026-06-01T15:07:50.303Z</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
-
-  <!-- Forensic Careers Guide and Roadmaps -->
   <url>
-    <loc>https://forenclue.in/careers</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.9</priority>
-  </url>
-
-  <!-- Forensic Interactive Q&A Community -->
-  <url>
-    <loc>https://forenclue.in/community</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-
-  <!-- Forensic Experts Team Services -->
-  <url>
-    <loc>https://forenclue.in/services</loc>
-    <lastmod>2026-05-25</lastmod>
+    <loc>https://forenclue.in/cases?case=0FbBY5KebZ0L6HbCyHqE</loc>
+    <lastmod>2026-06-01T15:07:50.303Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEi2pUUki4Q9nT3lE7LQALucnksBr1-vruPbflELEpjFsthJ7M5Y12JMwgdWi4HAnh7vnx0QV9gzGHX_Fs800qYiq7-XZL6MHl3gkYsOFtg84SYB-FIYxHwldL8FnB8BmjiLDlNnEZoGa7_qDIIyxBV1dQPbHXMEMkeqchurIRshW6WNTOaQ9TCIrj5cliA/s1254/1000120009.png</image:loc>
+      <image:title>Tandoor murder case </image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEh_faVDenXcpq363GTqFxMa1Al9Qr95Ve7M2_BFcpvpG1A8tJKNLIK039Rn_zXE8cIbrHHKXeupZ2xGzRL5jQpobwEzinb-eTtfM7V1E2CeAV9cLsWnzJimTeByEGq3RXKGbOBqgQAY39rQQEY8fH1WOvuC-OlOeD0lbZni-Ipdqiq3au8Ga7DnInb7gPM/s1688/1000118423.jpg</image:loc>
+      <image:caption>Information 🧐</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjFHBHkyMGuU0lBCj3jMAJCdNF9or5YI46qTbexICPKUxAwj7m9wilm0M0LOiCEakUGXV4YuMH-KS2gbO__Kos4dpR-80mkNb9lcy-Bcv20ZLNVb5rbUk5j8Mj7NwKhmQil8b-Mg7LGuyMK6wgZEUAvyyao0zuEbBzcZzkwTvFW_iehPukTuASPwvXZWjs/s1080/1000118422.jpg</image:loc>
+      <image:caption>Characters ☃️</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjbQuFrKVxVhA7zEW1KAfo_1SY-G0WxhT51r4PN1dizs63zL_iFEi-L286IpVQI7zJx0WzXThbV0Ore_aK4JKV3P32XznTrIiGFf-5Gdx0wBfGMXlMgsgkQANOW9J2ijxgDFCklqw_yjVNT5OdnUOaUvi-ZNM9XJuaA1r6NreVPGQqyt40M7y_ClPfZu84/s400/1000118421.jpg</image:loc>
+      <image:caption>Tandoor 🔥🔥</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEixT3PoCTPqwkqRRB-V5E0C_18U0YV5Ai-ym7oGzs16rQNiKUd295usphKpwyeV5O0GaePK1u_ay8mBmRYoY-k3RhnMiaueODH4ncPiaJX3T03a8hTDb8jY2pbZatj_esgcIEWiZgt2WX0Z6qbAc33XXVTLwODPxnvlB9Z2XLPKLWGtMP4SrlGhHfUqlAs/s621/1000118999.jpg</image:loc>
+      <image:caption>Killer 🔪</image:caption>
+    </image:image>
   </url>
-
-  <!-- Forensic Handbooks & eBooks -->
   <url>
-    <loc>https://forenclue.in/ebooks</loc>
-    <lastmod>2026-05-25</lastmod>
+    <loc>https://forenclue.in/cases?case=B1HNKkopZXlC8FNrhVh6</loc>
+    <lastmod>2026-06-01T15:07:50.303Z</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgqBQBJeraKTtTdzwyEIuq9CGJeigd6_nngnU8NTveAc9BDcd8_q13FS0aKwC048TxVE-0P0WKid8aBNsxIuzCfoE9jYIiIx4t9EvdhgyZo4KEQ3Nbjbu5iutvd2HI5VYggWU37pO4QwhGC57SIR_zYc5JA7CYQPidw6kIdM0gWLJSVO0aGTEpiv1jGua4/s1448/1000120378.png</image:loc>
+      <image:title>sheena bora murder case </image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg7JIxbPvY7GoD11oKHKmWSOvXmQ40zfgPTkKDtNs8M9nH0o-axFHA_cjferk6Xzdu81ZBGfkN2n_u0v6ty5bNfYls-5sNhF19-27GudZkj1kiopy_2KKQuX5gdJNUtPL6Cuq1_XOhpcLrpUi5bQiZU7gJ1jz-tHng_L3bx2w20mEZRSm_-uXyUOnB_m-U/s750/1000120231.jpg</image:loc>
+      <image:caption>#) article 🧐</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiglLUgdxzM5hGEvb7C7TOq7MeXxX4xvBNRfVezgcYpExf9ZThmNiqeoMjBYW7M0hCG2bafLhg75Fk2V8l69Xe-sa014XxJm8yqvW0NqkWmVD1SOwhaFjxrZPhhTSJYib1SqDysmCd15tl0AyU0grXvcGN3sfKjMst52NafLqhr6Qt33Hwv1cfHCH6f8SQ/s759/1000120377.jpg</image:loc>
+      <image:caption>Sheena bora #)⚰️</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjuD11FOzlvydNd1w7ppT3Wp2PRVkJEKhHgBWBR9t6AbmpcATyyATerGamWWdK5mpXjQrJPFxBuYZW6I4LAROzxXoFlUFAa0AHwG9_X77Kv4K9Cd2-PHVegA3H-HKhckv5WRu7Mb-gl6Imnsx38V36VIvcNbQllnumCdOdnu-7xQoWvzm2bSj25JRlzUus/s796/1000120379.jpg</image:loc>
+      <image:caption>Indrani Mukerjea (Sheena bora biological mother) and Peter Mukerjea( sheena bora step-father) #🔪</image:caption>
+    </image:image>
   </url>
-
-  <!-- Contact Forensic Experts Hub -->
   <url>
-    <loc>https://forenclue.in/contact</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://forenclue.in/cases?case=SeVvdBKSqEJKozwwgT83</loc>
+    <lastmod>2026-06-01T15:07:50.303Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgBiTNdOHTS_vUEygoDzeyPzXYJ6DyrQZbGDToBW8hHuksqki1AQokUVTPC2KkgSRg4xMEspAT1uw_Olm3DLQpeVGt1syJExq_6QJRpP22s5XFOGVcEQbHhB41zM606-tr2leJlnN9W3t-hCaJOvDnr-K6KTlwAoYPw5_x_s7feRJvPJAZseeXTnxb55Ps/s1254/1000120582.png</image:loc>
+      <image:title>Citibank–MphasiS Call Center Fraud Case (2005) </image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhYeq1YJ1LxqQjKb6gekMw7DgGrnE9f0lbbbSi-wVgnnuypF2hP5Tf9HxmCKRRXFOe218k6MVdzdqI2Vm2MOtKLdUyuNs6OqqrZMMRWaHN6dj_Fv7PjRykipD8N04tEgEsOr_6-Q4658AgHAXPuHx97B33scQna17KkJk6AsxVUMJIOu2fBNDDrzkAXZ8o/s172/1000120578.jpg</image:loc>
+      <image:caption>Random stuf got related to case </image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhqRubRoEYKSPuUGTVsy4Cey1nSNQ3mQXwCwUBoKGgXebCCDd07azP8APB1siA7sVuI_jijZB615o4TuwhvIM394OuXsb4fZ13OR8gnzW1tqmoY3el9MHUZIQ0IkreNoAxvXS5j6HfDvkrdA2cuMgXON-mGyF_xFoIURk-k8s9MwTo9cfvsyFWz-hZPYng/s1024/1000120580.png</image:loc>
+      <image:caption>Poster of information 🧠</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgR6FsSpilDcab96tALcT2XBJAluUP6PjLD77Hyr9I4Q44z5hT8bFtDAYKGnIMTiwVu2cn5jYwvjs7UHcMAgMKKWfgYBzWJ9UdzOHBqQj2Yfk-5_Fgv_GjlmolNMczcIAySbnxWgl-1OiTIGXrYIlm9y42RV_iptkVlLaah6yDhwQqrYU8e1V8GbjOkaXI/s532/1000120581.jpg</image:loc>
+      <image:caption>Prosses of scammer 🧑‍💻</image:caption>
+    </image:image>
   </url>
-
-  <!-- Privacy Policy Statement -->
   <url>
-    <loc>https://forenclue.in/privacy</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <loc>https://forenclue.in/cases?case=TDc7giOcZULHX0MOKGSn</loc>
+    <lastmod>2026-06-01T15:07:50.303Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgWelQtifJ-d70lPq3DQgUvSVLwfdswdAYwRZf7KS4oSQv6U2rANcHoBljIr5Aqmy3CHzUSE0mIa8fPqpJVRAl2WOJnmBjzpaozfxv6wf_pZBZFP6DqYs9j9evLPK2LnLR_yWU3Gsro0X7IuyIYIhvrDCWfXkcrekpTJAxzo7EmctjLXvIwJj0HgAkRdME/s1536/1000120798.png</image:loc>
+      <image:title>satyam scam (2009)</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiZVDw9RaMQLOI_XYChmeHSLarbikl44TIvu0gY3CMteLT5GxLP9SDGqhJ0xG6QT0EnP0fjplBgv6DVuPPhR6-WfKOLewB7jw6uyXdyG-2NdWdd4rpDFrBocc8lRYzW3VFvFL66437IzTLThTs2nXpEpyfjtT0cp6Satg-S3pHt5zZDJLghut_lAulEbSU/s600/1000120791.jpg</image:loc>
+      <image:caption>Satyam company in hyderabad </image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjc86Zg6Zzxu8O-grquqHOowuo_f2hqXr8H3cvfArIsuVijqUQj_zi_l21E4VUJwsrgJ_-7T82we034saKpVoYz063IJqbe1APLlxPpj5xB2V7wsUElILKA-NcKAbFXVhxGMfLev9Hd7SpKyuWQStdVjZ-2N-Qt93Jv45E8K_3HUsochGWxMpsqFLFHyr0/s400/1000120792.jpg</image:loc>
+      <image:caption>Byrraju Ramalinga Raju(the main person ☎️)</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhoUmG22fH20FWg1io7bKCg7XONl4ePkak5doDpG4N8eVxs56liN_Re2Q8LtL3SLTwy-beuIQoKmjhPnwdwMaXPKBDiyN-ZJ-34LP6W1LeXceEiBmGChfG50iSACuV1LcXU0tGjJHonYc7sBvNdHL_nU_UoA3uY6hWbOnZhkwcj1bbnmpMEoRpHQcXXc6I/s400/1000120793.gif</image:loc>
+      <image:caption>Stayam saga</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjvu6GUXuW_kp2VGEi1Dy_wEGpBg0YW4IEetOXvuVqI4HaT24pxisPeA162UgziTWDL9_Y7BvvYFs5AjNxwcRJQ3ExgwzGY9cEMy9SYNRGwGHbgFP9QS6hab9K1Tw8hiJA8QkDYcsVX6JbFP1PsP-KXSRJtZgSdtW19F5vtI3ZjzJFaR8TO2pYRQxsXqsE/s468/1000120795.jpg</image:loc>
+      <image:caption>Amul butter cover of stayam scam🧈</image:caption>
+    </image:image>
   </url>
-
-  <!-- Platform Terms of Service -->
   <url>
-    <loc>https://forenclue.in/terms</loc>
-    <lastmod>2026-05-25</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.3</priority>
+    <loc>https://forenclue.in/cases?case=a60XHfJd43eKVU7httCw</loc>
+    <lastmod>2026-06-01T15:07:50.303Z</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiiCbM1vHGqYlyk3XB57Ol3NWQdGZWRro4JE1eH-isnCUDzNsOCmctsSQosfgRDU0TC_OR9c6mt7NMZDtLq23TmbPuxWZ54-uUJk0GwmCsq3hybBb9xu35BNRC6sXSd-iL9-fFLWCJozZAgilQoQYRsMbAiFfytj_EvpirE5YNZBIGbZdb8Zq_Fd88BIUo/s1402/1000120055.png</image:loc>
+      <image:title>Jessica Lal murder case </image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgf4ess0Mj0lzU9c56itRtSQlqEju9rx4Wdh2uGK9h8ZQIQbgUJEaSKQ9PD6wqyDtJzOJKaoC3qhpido3prsX12FQrZ9dgHUgFav29cjAB2K-rcm8EXTWUPg_-H4OMYM02xEGXoNfzvzy93N_rsZQXkMgNZeBZkgqOzFYrTPO5a9M0FsyZvRmLdBy3remM/s1808/1000120054.jpg</image:loc>
+      <image:caption>All characters </image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEg00nh4gKPGgQOAo1d0Az43fdrYR7dzDHPdhQl0KV_YZXebINTYaA_lQ1eg4rEv5dIItnHoPynrjqvIRyTlge1dlEpWgMM_vmlbAomi4aBMxtaDtQ_VrHhfWObAjB40uSEBH5VMXLyEDXJXyI0xH5GlwAuO7dzit0LUlbVU4b5mrGqH6UGbCY906AMVaEU/s600/1000120053.jpg</image:loc>
+      <image:caption>Manu shrma #🔪</image:caption>
+    </image:image>
+    <image:image>
+      <image:loc>https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhMrFS6ZaRjq6x8XrHXoOx_IoG9YiSXBgPoZ-HH7-nreMOa9SeSoEQYKo8i7KbXuX6MMP-BheWN7QfXpAQuRP0CzVF8oKhAfyGd4b_HrEFF4sORubU1sdId7Folwvak0lnZr7__m7kQB15xUBFFcl4ER_s_6FFW138697IukuQdUuM3QMWEef74QAm1obA/s190/1000120052.jpg</image:loc>
+      <image:caption>Jessica Lal #victim</image:caption>
+    </image:image>
   </url>
 </urlset>

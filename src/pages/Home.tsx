@@ -6,6 +6,7 @@ import { ArrowRight, Search, ShieldAlert, BookOpen, Users, Star, Download } from
 import { EvidenceMarker } from '@/components/ui/EvidenceMarker';
 import { EditableText } from '@/components/ui/EditableText';
 import { SEO } from '@/components/layout/SEO';
+import { ForensicGridCanvas } from '@/components/ui/ForensicGridCanvas';
 
 const MotionLink = motion.create(Link);
 
@@ -104,13 +105,15 @@ The ForenClue Curriculum Board
         keywords="forensic science, crime scene investigation, fingerprint analysis, digital forensics, ballistics, bloodstain pattern analysis, forensic training india, docudraft, forenclue"
         canonicalPath=""
       />
+      
       {/* Hero Section */}
       <section 
-        className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-grid-pattern pt-20"
+        className="relative min-h-[75vh] sm:min-h-[80vh] flex items-center justify-center overflow-hidden bg-[#040814] pt-4 sm:pt-6 pb-12 sm:pb-16"
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="absolute inset-0 bg-base/80 z-0" />
+        {/* Animated Forensic Science, Radar Reticles & Cyber Grid Canvas */}
+        <ForensicGridCanvas />
         
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center perspective-1000">
           <motion.div

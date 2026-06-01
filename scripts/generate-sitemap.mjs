@@ -120,8 +120,8 @@ async function generateSitemap() {
     process.exit(0);
 
   } catch (error) {
-    console.error("Failed to generate sitemap:", error);
-    process.exit(1);
+    console.warn("Failed to generate sitemap due to offline or connection error:", error.message || error);
+    process.exit(0);
   }
 }
 

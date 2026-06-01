@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '@/contexts/AuthContext';
+import DnaVisualizer from '../components/DnaVisualizer';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   ShieldCheck, 
@@ -118,71 +119,14 @@ export default function Login() {
 
       <div className="max-w-5xl w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch relative z-10">
         
-        {/* Left Side: Interactive Branding Pane (Desktop Only / Left 5 Columns) */}
+        {/* Left Side: Interactive 3D DNA Helix & Forensic Scanner Pane (Desktop Only / Left 5 Columns) */}
         <motion.div 
           initial={{ opacity: 0, x: -35 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="lg:col-span-5 hidden lg:flex flex-col justify-between bg-surface/50 backdrop-blur border border-black/10 dark:border-white/5 rounded-3xl p-8 shadow-xl overflow-hidden relative"
+          className="lg:col-span-5 hidden lg:flex flex-col items-stretch min-h-[500px]"
         >
-          {/* Neon side border line */}
-          <div className="absolute top-0 bottom-0 left-0 w-[3px] bg-gradient-to-b from-warning via-warning/30 to-transparent" />
-          
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-warning/10 border border-warning/30 flex items-center justify-center">
-                <ShieldCheck className="text-warning" size={20} />
-              </div>
-              <span className="font-heading font-black text-lg tracking-wider text-text-main">
-                FOREN<span className="text-warning">CLUE</span>
-              </span>
-            </div>
-
-            <div className="space-y-4 pt-4">
-              <h2 className="text-3xl font-heading font-black text-text-main leading-tight">
-                SECURE ACCESS <span className="text-warning">STUDENT GATEWAY</span>
-              </h2>
-              <p className="text-text-muted text-xs leading-relaxed uppercase tracking-wider">
-                Unlock instant access to criminalistic training vectors, high-fidelity laboratories, and expert feedback tools.
-              </p>
-            </div>
-
-            <div className="space-y-2 pt-6">
-              <span className="text-[10px] uppercase font-black tracking-widest text-warning block">Platform Capabilities</span>
-              
-              <div className="flex items-center gap-3 text-xs text-text-main">
-                <CheckCircle size={14} className="text-success shrink-0" />
-                <span>3D Ballistics & Forensic Tool Analyzer</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-text-main">
-                <CheckCircle size={14} className="text-success shrink-0" />
-                <span>Interactive Crime Scenes & Evidence Mapping</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-text-main">
-                <CheckCircle size={14} className="text-success shrink-0" />
-                <span>Curated E-Books & Dedicated Doubt Resolvers</span>
-              </div>
-              <div className="flex items-center gap-3 text-xs text-text-main">
-                <CheckCircle size={14} className="text-success shrink-0" />
-                <span>ISO & UGC Compliant Mock Tests Portal</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Diagnostics HUD mockup */}
-          <div className="border-t border-black/10 dark:border-white/5 pt-6 mt-8 space-y-3">
-            <div className="flex items-center justify-between text-[10px] font-mono text-text-muted">
-              <span>ESTABLISH ENCLAVE:</span>
-              <span className="text-success font-bold">SUCCESSFUL</span>
-            </div>
-            
-            <div className="bg-crust/50 border border-black/10 dark:border-white/5 rounded-lg p-3 font-mono text-[9px] text-text-muted space-y-1">
-              <p className="text-warning font-semibold">⚡ DECRYPTOR_LOGS:</p>
-              <p>&gt; IP_REVERSIBLE: 127.0.0.1</p>
-              <p>&gt; SSL_SHA_KEY: ENCRYPTED_HTTPS_ACTIVE</p>
-              <p>&gt; PROTOCOL_VER: V-2.4.0_PROD</p>
-            </div>
-          </div>
+          <DnaVisualizer />
         </motion.div>
 
         {/* Right Side: Enhanced Authentication Core (Right 7 Columns) */}

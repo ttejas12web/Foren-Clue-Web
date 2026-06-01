@@ -845,12 +845,12 @@ export default function Cases() {
                       <span className="text-[10px] font-black uppercase tracking-wider text-warning flex items-center gap-1.5 mb-2 bg-warning/5 px-2.5 py-1 rounded w-fit">
                         Executive Case Summary
                       </span>
-                      <p className={`text-sm sm:text-base leading-relaxed font-semibold m-0 ${
-                        readingTheme === 'sepia' 
-                          ? 'text-amber-900' 
-                          : readingTheme === 'light' 
-                            ? 'text-zinc-900 font-extrabold' 
-                            : 'text-text-muted'
+                      <p className={`text-sm sm:text-base leading-relaxed font-bold m-0 ${
+                        readingTheme === 'slate' 
+                          ? 'text-zinc-100 dark:text-zinc-100' 
+                          : readingTheme === 'sepia' 
+                            ? 'text-amber-950' 
+                            : 'text-zinc-900'
                       }`}>
                         {selectedCase.summary}
                       </p>

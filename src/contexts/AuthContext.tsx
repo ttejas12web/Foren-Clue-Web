@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
+import { User, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, googleProvider, db } from '../lib/firebase';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'motion/react';
@@ -27,6 +27,8 @@ interface AuthContextType {
   isAdmin: boolean;
   accessToken: string | null;
   signInWithGoogle: () => Promise<void>;
+  signUpWithEmail: (email: string, pass: string, name: string) => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
   adminLogin?: (email: string, password: string) => boolean;
 }
@@ -255,6 +257,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signUpWithEmail = async (email: string, pass: string, name: string) => {
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(result.user, {
+        displayName: name
+      });
+      const userRef = doc(db, 'users', result.user.uid);
+      await setDoc(userRef, {
+        uid: result.user.uid,
+        email: result.user.email || '',
+        displayName: name || 'Investigator',
+        photoURL: '',
+        createdAt: serverTimestamp(),
+        purchasedCourses: [],
+        bookmarks: [],
+        achievementTags: ['Forensic Novice'],
+        progress: {},
+        doubtsCount: 0,
+        commentsCount: 0
+      });
+    } catch (error) {
+      console.error("Error signing up with email and password: ", error);
+      throw error;
+    }
+  };
+
+  const signInWithEmail = async (email: string, pass: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error) {
+      console.error("Error signing in with email and password: ", error);
+      throw error;
+    }
+  };
+
   const logout = async () => {
     try {
       if (manualAdmin) {
@@ -282,7 +319,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user: effectiveUser, userProfile: effectiveUserProfile, loading, isAdmin, accessToken, signInWithGoogle, logout, adminLogin }}>
+    <AuthContext.Provider value={{ user: effectiveUser, userProfile: effectiveUserProfile, loading, isAdmin, accessToken, signInWithGoogle, signUpWithEmail, signInWithEmail, logout, adminLogin }}>
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div 

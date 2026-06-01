@@ -360,7 +360,7 @@ export default function Cases() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" size={16} />
                 <input 
                   type="text" 
-                  placeholder="Search dossiers..."
+                  placeholder="Search cases..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-surface border border-black/10 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-xs font-bold focus:border-warning/50 outline-none transition-all"

@@ -124,7 +124,7 @@ The ForenClue Curriculum Board
           >
             <motion.span 
               style={{ translateZ: 20 }}
-              className="inline-block py-1 px-3 rounded-full bg-warning/10 border border-warning/30 text-warning text-sm font-semibold mb-6 uppercase tracking-wider block-shadow"
+              className="inline-block py-1 px-3 rounded-full bg-warning/10 border border-warning/30 text-warning text-sm font-semibold mb-3 uppercase tracking-wider block-shadow"
             >
               India's First Dedicated Platform
             </motion.span>

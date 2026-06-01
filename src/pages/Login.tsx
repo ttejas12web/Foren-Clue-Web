@@ -17,11 +17,12 @@ import {
   BookOpen, 
   Award, 
   Activity,
-  AlertCircle
+  AlertCircle,
+  User as UserIcon
 } from 'lucide-react';
 
 export default function Login() {
-  const { user, signInWithGoogle, loading, adminLogin } = useAuth();
+  const { user, signInWithGoogle, signUpWithEmail, signInWithEmail, loading, adminLogin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as any)?.from?.pathname || "/dashboard";
@@ -36,10 +37,13 @@ export default function Login() {
   const [adminError, setAdminError] = useState('');
   const [showAdminPass, setShowAdminPass] = useState(false);
 
-  // Traditional Simulated inputs
+  // Traditional inputs
+  const [displayName, setDisplayName] = useState('');
   const [simulatedEmail, setSimulatedEmail] = useState('');
   const [simulatedPassword, setSimulatedPassword] = useState('');
-  const [traditionalWarning, setTraditionalWarning] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (user && !loading) {
@@ -70,13 +74,39 @@ export default function Login() {
     }
   };
 
-  const handleSimulatedSubmit = (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTraditionalWarning(
-      activeTab === 'signin'
-        ? "Secure student profile databases are now linked uniquely via Google Single Sign-On (SSO). Please select 'Sign in with Google' below for secure authentication."
-        : "Traditional signups are disabled in compliance with ISO security mandates. Please register instantly using your 'Sign in with Google' profile identity."
-    );
+    setAuthError('');
+    setAuthSuccess('');
+    setIsSubmitting(true);
+    
+    try {
+      if (activeTab === 'signup') {
+        const name = displayName.trim() || simulatedEmail.split('@')[0] || 'Investigator';
+        await signUpWithEmail(simulatedEmail, simulatedPassword, name);
+        setAuthSuccess('Account created successfully! Redirecting...');
+      } else {
+        await signInWithEmail(simulatedEmail, simulatedPassword);
+        setAuthSuccess('Signed in successfully! Redirecting...');
+      }
+    } catch (err: any) {
+      console.error("Authentication failed:", err);
+      let errMsg = "An unexpected error occurred. Please try again.";
+      if (err.code === 'auth/email-already-in-use') {
+        errMsg = "This email is already registered. Please sign in instead.";
+      } else if (err.code === 'auth/invalid-email') {
+        errMsg = "The email address is invalid.";
+      } else if (err.code === 'auth/weak-password') {
+        errMsg = "The password must be at least 6 characters long.";
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        errMsg = "Invalid email or password combination.";
+      } else {
+        errMsg = err.message || errMsg;
+      }
+      setAuthError(errMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -168,7 +198,8 @@ export default function Login() {
               <button 
                 onClick={() => {
                   setActiveTab('signin');
-                  setTraditionalWarning('');
+                  setAuthError('');
+                  setAuthSuccess('');
                 }}
                 className={`flex-1 pb-4 text-xs sm:text-sm font-heading font-black uppercase tracking-widest transition-all relative ${
                   activeTab === 'signin' ? 'text-warning' : 'text-text-muted/60 hover:text-text-main'
@@ -182,7 +213,8 @@ export default function Login() {
               <button 
                 onClick={() => {
                   setActiveTab('signup');
-                  setTraditionalWarning('');
+                  setAuthError('');
+                  setAuthSuccess('');
                 }}
                 className={`flex-1 pb-4 text-xs sm:text-sm font-heading font-black uppercase tracking-widest transition-all relative ${
                   activeTab === 'signup' ? 'text-warning' : 'text-text-muted/60 hover:text-text-main'
@@ -195,26 +227,65 @@ export default function Login() {
               </button>
             </div>
 
-            {/* Standard Warning notice block */}
+            {/* Error and Success alerts */}
             <AnimatePresence mode="wait">
-              {traditionalWarning && (
+              {authError && (
                 <motion.div 
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="bg-warning/10 border border-warning/30 text-warning px-4 py-3 rounded-lg text-xs flex items-start gap-2.5 mb-6 leading-relaxed"
+                  className="bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-400 px-4 py-3 rounded-lg text-xs flex items-start gap-2.5 mb-6 leading-relaxed"
                 >
-                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  <AlertCircle size={16} className="shrink-0 mt-0.5 animate-pulse" />
                   <div>
-                    <span className="font-bold uppercase tracking-wider block mb-0.5">Secure SSO Override</span>
-                    {traditionalWarning}
+                    <span className="font-bold uppercase tracking-wider block mb-0.5">Authorization Revoked</span>
+                    {authError}
+                  </div>
+                </motion.div>
+              )}
+              {authSuccess && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="bg-success/10 border border-success/30 text-success px-4 py-3 rounded-lg text-xs flex items-start gap-2.5 mb-6 leading-relaxed"
+                >
+                  <CheckCircle size={16} className="shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold uppercase tracking-wider block mb-0.5 font-heading">Identity Secured</span>
+                    {authSuccess}
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Simulated Traditional Credentials Form (to trigger SSO recommendations) */}
-            <form onSubmit={handleSimulatedSubmit} className="space-y-4 mb-8">
+            {/* Real Authentication Form */}
+            <form onSubmit={handleAuthSubmit} className="space-y-4 mb-8">
+              {activeTab === 'signup' && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">
+                    Profile Identifier (Name)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-text-muted/50">
+                      <UserIcon size={16} />
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="enter your name"
+                      className="w-full bg-base/50 text-text-main placeholder-text-muted/40 text-xs rounded-xl border border-black/15 dark:border-white/5 pl-10 pr-4 h-11 focus:outline-none focus:border-warning/50 transition-all font-mono"
+                    />
+                  </div>
+                </motion.div>
+              )}
+
               <div>
                 <label className="block text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1.5">
                   Email Address
@@ -228,7 +299,7 @@ export default function Login() {
                     required
                     value={simulatedEmail}
                     onChange={(e) => setSimulatedEmail(e.target.value)}
-                    placeholder="enter your academic email"
+                    placeholder="enter your account email"
                     className="w-full bg-base/50 text-text-main placeholder-text-muted/40 text-xs rounded-xl border border-black/15 dark:border-white/5 pl-10 pr-4 h-11 focus:outline-none focus:border-warning/50 transition-all font-mono"
                   />
                 </div>
@@ -255,10 +326,17 @@ export default function Login() {
 
               <button 
                 type="submit"
-                className="w-full h-11 bg-base border border-black/15 dark:border-white/10 text-text-muted/80 font-heading font-black text-xs uppercase tracking-widest rounded-xl hover:bg-black/10 dark:hover:bg-white/5 transition-all text-center flex items-center justify-center gap-2 cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full h-11 bg-base border border-black/15 dark:border-white/10 text-text-muted/80 hover:text-text-main font-heading font-black text-xs uppercase tracking-widest rounded-xl hover:bg-black/10 dark:hover:bg-white/5 transition-all text-center flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                {activeTab === 'signin' ? 'Verify Credentials' : 'Access Registration'}
-                <ArrowRight size={14} />
+                {isSubmitting ? (
+                  <div className="w-5 h-5 border-2 border-warning border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    {activeTab === 'signin' ? 'Verify Credentials' : 'Access Registration'}
+                    <ArrowRight size={14} />
+                  </>
+                )}
               </button>
             </form>
 
@@ -268,7 +346,7 @@ export default function Login() {
                 <div className="w-full border-t border-black/10 dark:border-white/5" />
               </div>
               <span className="px-3 bg-surface text-[10px] font-mono text-text-muted uppercase tracking-[0.25em] relative">
-                Recommended Secure Gate
+                OR
               </span>
             </div>
 
@@ -280,7 +358,7 @@ export default function Login() {
                 disabled={loading}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
-                className="w-full h-14 bg-white text-base-dark hover:bg-warning/20 border border-black/10 dark:border-white/5 font-heading font-black text-xs sm:text-sm uppercase tracking-[0.18em] rounded-xl hover:text-text-main transition-all flex items-center justify-center gap-4 group shadow-xl shadow-black/10 dark:shadow-warning/5 cursor-pointer disabled:opacity-50"
+                className="w-full h-14 bg-white text-black hover:bg-warning/20 border border-black/10 dark:border-white/5 font-heading font-black text-xs sm:text-sm uppercase tracking-[0.18em] rounded-xl hover:text-white transition-all flex items-center justify-center gap-4 group shadow-xl shadow-black/10 dark:shadow-warning/5 cursor-pointer disabled:opacity-50"
               >
                 {loading ? (
                   <div className="w-6 h-6 border-2 border-warning border-t-transparent rounded-full animate-spin" />
@@ -312,105 +390,7 @@ export default function Login() {
                 )}
               </motion.button>
               
-              <div className="bg-base/40 p-4 rounded-xl border border-black/5 dark:border-white/5 text-center">
-                <p className="text-[10px] sm:text-xs text-text-muted leading-relaxed">
-                  🔐 One-click verification maps to Google Academic cloud. All forensic records, certifications, and mock histories automatically bind to your gmail account.
-                </p>
-              </div>
             </div>
-          </div>
-
-          {/* Admin Backdoor Access Toggle Area */}
-          <div className="border-t border-black/10 dark:border-white/5 pt-6 mt-8">
-            <div className="flex items-center justify-between">
-              <button 
-                type="button"
-                onClick={() => setShowAdminLogin(!showAdminLogin)}
-                className="inline-flex items-center gap-1.5 text-[10px] font-mono text-warning/70 hover:text-warning uppercase tracking-widest transition-all cursor-pointer"
-              >
-                <Terminal size={12} />
-                <span>{showAdminLogin ? '[- Hide Server Backdoor]' : '[+ Deploy Terminal Login]'}</span>
-              </button>
-              
-              <span className="text-[9px] font-mono text-text-muted uppercase tracking-wider">
-                System Status: <span className="text-success font-black animate-pulse">● SECURED</span>
-              </span>
-            </div>
-
-            <AnimatePresence>
-              {showAdminLogin && (
-                <motion.div 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden mt-4"
-                >
-                  <form onSubmit={handleAdminSubmit} className="bg-crust/80 border border-warning/10 rounded-xl p-4 space-y-4">
-                    <div className="text-[10px] font-mono uppercase text-warning border-b border-warning/10 pb-2 mb-2 font-black flex items-center gap-1.5">
-                      <Terminal size={12} className="animate-pulse" />
-                      <span>ADMIN AUTHENTICATION SHELL - MASTER BYPASS</span>
-                    </div>
-
-                    {adminError && (
-                      <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-2.5 rounded text-xs leading-relaxed font-mono">
-                        ERR_DENIED: {adminError}
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[8px] font-mono text-text-muted uppercase tracking-wider mb-1">
-                          Administrator Email
-                        </label>
-                        <input
-                          type="email"
-                          required
-                          value={adminEmail}
-                          onChange={(e) => setAdminEmail(e.target.value)}
-                          placeholder="e.g. forenclue@gmail.com"
-                          className="w-full bg-base/60 text-text-main placeholder-text-muted/30 text-[11px] rounded-lg border border-white/5 px-3 py-2 focus:outline-none focus:border-warning/50 transition-all font-mono"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[8px] font-mono text-text-muted uppercase tracking-wider mb-1">
-                          Master Passkey
-                        </label>
-                        <div className="relative">
-                          <input
-                            type={showAdminPass ? "text" : "password"}
-                            required
-                            value={adminPassword}
-                            onChange={(e) => setAdminPassword(e.target.value)}
-                            placeholder="master secret key"
-                            className="w-full bg-base/60 text-text-main placeholder-text-muted/30 text-[11px] rounded-lg border border-white/5 pl-3 pr-8 py-2 focus:outline-none focus:border-warning/50 transition-all font-mono"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowAdminPass(!showAdminPass)}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted hover:text-warning"
-                          >
-                            {showAdminPass ? <EyeOff size={12} /> : <Eye size={12} />}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-2 bg-warning text-crust font-mono font-black text-[10px] uppercase tracking-widest rounded hover:bg-warning/80 transition-all text-center flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <span>INITIALIZE OVERRIDE CONNECTION</span>
-                      <ArrowRight size={10} />
-                    </button>
-                    
-                    <p className="text-[8px] font-mono text-text-muted/60 text-center leading-normal uppercase">
-                      Warning: Authorized Forenclue Team Personnel Only. Port logs audited 24/7.
-                    </p>
-                  </form>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
         </motion.div>

@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, ZoomIn, ZoomOut, Search, ChevronLeft, ChevronRight, 
   Download, FileText, Sun, Moon, Eye, Printer, BookOpen, 
-  Check, Info, FileDown, CheckCircle2
+  Check, Info, FileDown, CheckCircle2, Maximize2, Minimize2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { resolveFileUrl, localFileStore } from '@/lib/localFileStore';
 
 interface PdfViewerModalProps {
   isOpen: boolean;
@@ -130,7 +131,32 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [currentSearchHitIdx, setCurrentSearchHitIdx] = useState(-1);
   const [viewMode, setViewMode] = useState<'pdf' | 'summary'>('summary');
+  const [resolvedPdfUrl, setResolvedPdfUrl] = useState<string>('');
+  const [pdfPage, setPdfPage] = useState<number>(1);
+  const [pdfZoom, setPdfZoom] = useState<string>('page-fit');
+  const [isMaximized, setIsMaximized] = useState<boolean>(false);
+  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
+  const [pdfError, setPdfError] = useState<string>('');
+  const [containerWidthForResize, setContainerWidthForResize] = useState<number>(0);
 
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Set up container ResizeObserver for responsive page width/fit canvas scales
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidthForResize(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Sync viewMode on resource change
   useEffect(() => {
     if (resource && resource.pdfUrl) {
       setViewMode('pdf');
@@ -138,6 +164,208 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
       setViewMode('summary');
     }
   }, [resource]);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl = '';
+
+    const resolve = async () => {
+      if (!resource || !resource.pdfUrl) {
+        setResolvedPdfUrl('');
+        return;
+      }
+      if (resource.pdfUrl.startsWith('localdb://')) {
+        const url = await resolveFileUrl(resource.pdfUrl);
+        if (active) {
+          setResolvedPdfUrl(url);
+          objectUrl = url;
+        }
+      } else {
+        if (active) {
+          setResolvedPdfUrl(resource.pdfUrl);
+        }
+      }
+    };
+
+    resolve();
+
+    return () => {
+      active = false;
+      if (objectUrl && objectUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [resource?.pdfUrl]);
+
+  // Load and initialize PDF.js client library and parse document
+  useEffect(() => {
+    if (viewMode !== 'pdf' || !resolvedPdfUrl) {
+      setPdfDoc(null);
+      setNumPages(null);
+      return;
+    }
+
+    let active = true;
+    setPdfLoading(true);
+    setPdfError('');
+    setPdfDoc(null);
+
+    const initPdf = async () => {
+      try {
+        if (!(window as any).pdfjsLib) {
+          await new Promise<void>((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+            script.async = true;
+            script.onload = () => {
+              const pdfjs = (window as any).pdfjsLib;
+              pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+              resolve();
+            };
+            script.onerror = () => reject(new Error('Failed to load PDF engine.'));
+            document.head.appendChild(script);
+          });
+        }
+
+        if (!active) return;
+
+        const pdfjsLib = (window as any).pdfjsLib;
+        const loadingTask = pdfjsLib.getDocument(resolvedPdfUrl);
+        const pdf = await loadingTask.promise;
+
+        if (!active) return;
+        setPdfDoc(pdf);
+        setNumPages(pdf.numPages);
+        setPdfPage(1); // Auto reset to first page upon parsing new document
+        setPdfLoading(false);
+      } catch (err: any) {
+        console.error('Error loading PDF with PDF-JS engine:', err);
+        if (active) {
+          setPdfError(err.message || 'Could not parse PDF content.');
+          setPdfLoading(false);
+        }
+      }
+    };
+
+    initPdf();
+
+    return () => {
+      active = false;
+    };
+  }, [resolvedPdfUrl, viewMode]);
+
+  // Render the current PDF page onto HTML Canvas with high performance rendering and scaling
+  useEffect(() => {
+    if (!pdfDoc || !canvasRef.current) return;
+
+    let active = true;
+    let renderTask: any = null;
+
+    const renderPage = async () => {
+      try {
+        const page = await pdfDoc.getPage(pdfPage || 1);
+        if (!active || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const containerWidth = containerRef.current?.clientWidth || 800;
+        const containerHeight = containerRef.current?.clientHeight || 600;
+
+        const unscaledViewport = page.getViewport({ scale: 1.0 });
+        let scale = 1.0;
+
+        if (pdfZoom === 'page-width') {
+          scale = (containerWidth - 32) / unscaledViewport.width;
+        } else if (pdfZoom === 'page-fit') {
+          const scaleHeight = (containerHeight - 48) / unscaledViewport.height;
+          const scaleWidth = (containerWidth - 32) / unscaledViewport.width;
+          scale = Math.min(scaleHeight, scaleWidth);
+        } else {
+          const zoomPercent = parseFloat(pdfZoom) || 100;
+          scale = (zoomPercent / 100) * ((containerWidth - 32) / unscaledViewport.width);
+        }
+
+        scale = Math.max(0.15, Math.min(scale, 5.0));
+
+        const viewport = page.getViewport({ scale });
+        const pixelRatio = window.devicePixelRatio || 1;
+        canvas.width = viewport.width * pixelRatio;
+        canvas.height = viewport.height * pixelRatio;
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+
+        ctx.save();
+        ctx.scale(pixelRatio, pixelRatio);
+        ctx.clearRect(0, 0, viewport.width, viewport.height);
+
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+
+        renderTask = page.render(renderContext);
+        await renderTask.promise;
+      } catch (err: any) {
+        console.error('Canvas render error in PDF-JS layout:', err);
+      }
+    };
+
+    // Low-latency render debounce
+    const timer = setTimeout(() => {
+      renderPage();
+    }, 45);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+      if (renderTask && typeof renderTask.cancel === 'function') {
+        renderTask.cancel();
+      }
+    };
+  }, [pdfDoc, pdfPage, pdfZoom, containerWidthForResize, isMaximized]);
+
+  const handleDownloadActualPdf = async () => {
+    if (!resource || !resource.pdfUrl) return;
+    
+    try {
+      let url = resource.pdfUrl;
+      let isBlob = false;
+      
+      if (resource.pdfUrl.startsWith('localdb://')) {
+        const blob = await localFileStore.getFile(resource.pdfUrl);
+        if (blob) {
+          url = URL.createObjectURL(blob);
+          isBlob = true;
+        } else {
+          throw new Error("Could not find local PDF file in the browser database.");
+        }
+      }
+      
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${(resource.title || 'Handout').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      
+      if (!isBlob && !url.startsWith('blob:') && !url.startsWith('data:')) {
+        link.target = '_blank';
+      }
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      if (isBlob) {
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 3000);
+    } catch (err: any) {
+      console.error("Failed to download original PDF:", err);
+      window.open(resource.pdfUrl, '_blank');
+    }
+  };
 
   const docData = getSimulatedDocumentContent(resource);
 
@@ -364,7 +592,7 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">
+      <div className={cn("fixed inset-0 z-50 flex items-center justify-center select-none transition-all", isMaximized ? "p-0" : "p-4")}>
         {/* Backdrop overlay */}
         <motion.div 
           initial={{ opacity: 0 }}
@@ -379,7 +607,12 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
-          className="bg-base border border-black/10 dark:border-white/10 w-full max-w-6xl h-[92vh] sm:h-[86vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col relative z-10"
+          className={cn(
+            "bg-base border border-black/10 dark:border-white/10 overflow-hidden shadow-2xl flex flex-col relative z-10 transition-all duration-300",
+            isMaximized 
+              ? "w-screen h-screen rounded-none border-none max-w-none m-0" 
+              : "w-full max-w-6xl h-[92vh] sm:h-[86vh] rounded-3xl"
+          )}
         >
           {/* Header Panel */}
           <div className="p-4 sm:p-5 border-b border-black/10 dark:border-white/5 bg-surface flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -399,6 +632,17 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
 
             {/* Header Controls */}
             <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+              {resource.pdfUrl && (
+                <button
+                  onClick={handleDownloadActualPdf}
+                  className="px-3.5 py-1.5 bg-warning text-crust hover:bg-warning/95 rounded-xl text-xs font-black uppercase transition-all flex items-center gap-1.5 cursor-pointer hover:scale-102 active:scale-98 shadow-sm"
+                  title="Download actual uploaded PDF document"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download PDF</span>
+                </button>
+              )}
+
               {/* Document Theme Buttons */}
               <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg border border-black/5 dark:border-white/5">
                 <button 
@@ -498,12 +742,155 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
               )}
 
               {viewMode === 'pdf' && resource.pdfUrl ? (
-                <div className="flex-1 overflow-hidden bg-black/15 dark:bg-black/30 rounded-2xl border border-black/10 dark:border-white/5 p-1 flex flex-col">
-                  <iframe
-                    src={`${resource.pdfUrl}#toolbar=1`}
-                    className="w-full h-full border-0 rounded-xl"
-                    title={resource.title}
-                  />
+                <div className="flex-1 overflow-hidden bg-black/15 dark:bg-black/30 rounded-2xl border border-black/10 dark:border-white/5 p-2 flex flex-col gap-2">
+                  {/* High fidelity PDF manual controls */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-surface border border-black/10 dark:border-white/10 p-2.5 rounded-xl shrink-0">
+                    {/* Page Change Trigger Section */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPdfPage(prev => Math.max(1, prev - 1))}
+                        disabled={pdfPage <= 1}
+                        className="px-3 py-1.5 bg-base hover:bg-black/5 dark:hover:bg-white/5 text-xs text-text-main font-bold border border-black/10 dark:border-white/10 rounded-lg flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                        title="Previous Page"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        <span>Prev</span>
+                      </button>
+
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="text-text-muted font-mono">Page</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={numPages || undefined}
+                          value={pdfPage}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            if (!isNaN(val) && val > 0) {
+                              setPdfPage(Math.min(numPages || Infinity, val));
+                            } else if (e.target.value === '') {
+                              setPdfPage('' as any);
+                            }
+                          }}
+                          onBlur={() => {
+                            if (!pdfPage || typeof pdfPage !== 'number' || pdfPage < 1) {
+                              setPdfPage(1);
+                            }
+                          }}
+                          className="w-12 bg-base border border-black/10 dark:border-white/10 rounded-lg py-1 text-center text-xs font-bold font-mono text-text-main outline-none focus:border-warning/50"
+                        />
+                        {numPages && (
+                          <span className="text-text-muted font-mono text-[10px] ml-1">
+                            / {numPages}
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => setPdfPage(prev => (typeof prev === 'number' ? Math.min(numPages || Infinity, prev + 1) : 1))}
+                        disabled={numPages ? pdfPage >= numPages : false}
+                        className="px-3 py-1.5 bg-base hover:bg-black/5 dark:hover:bg-white/5 text-xs text-text-main font-bold border border-black/10 dark:border-white/10 rounded-lg flex items-center justify-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                        title="Next Page"
+                      >
+                        <span>Next</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Fit & Zoom section */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-lg border border-black/5 dark:border-white/5">
+                        <button
+                          onClick={() => setPdfZoom('page-fit')}
+                          className={cn(
+                            "px-2 py-1 text-[10px] uppercase tracking-wider rounded font-bold transition-all cursor-pointer",
+                            pdfZoom === 'page-fit' ? "bg-warning text-crust shadow-sm" : "text-text-muted hover:text-text-main"
+                          )}
+                          title="Fit Page size to view bounds"
+                        >
+                          Fit Page
+                        </button>
+                        <button
+                          onClick={() => setPdfZoom('page-width')}
+                          className={cn(
+                            "px-2 py-1 text-[10px] uppercase tracking-wider rounded font-bold transition-all cursor-pointer",
+                            pdfZoom === 'page-width' ? "bg-warning text-crust shadow-sm" : "text-text-muted hover:text-text-main"
+                          )}
+                          title="Stretch PDF width to fit the window width"
+                        >
+                          Fit Width
+                        </button>
+                      </div>
+
+                      {/* Zoom Presets Selector */}
+                      <select
+                        value={['page-fit', 'page-width'].includes(pdfZoom) ? pdfZoom : pdfZoom ?? '100'}
+                        onChange={(e) => setPdfZoom(e.target.value)}
+                        className="bg-base border border-black/10 dark:border-white/10 text-xs font-bold rounded-lg px-2 py-1 text-text-main outline-none focus:border-warning/50 cursor-pointer"
+                        title="Scale Zoom percent"
+                      >
+                        <option value="page-fit">Adaptive Fit</option>
+                        <option value="page-width">Wide Fit</option>
+                        <option value="50">50%</option>
+                        <option value="75">75%</option>
+                        <option value="100">100%</option>
+                        <option value="125">125%</option>
+                        <option value="150">150%</option>
+                        <option value="200">200%</option>
+                      </select>
+
+                      {/* Screen Fit (Maximize Mode) Toggle */}
+                      <button
+                        onClick={() => setIsMaximized(!isMaximized)}
+                        className={cn(
+                          "px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center justify-center gap-1 text-xs font-bold",
+                          isMaximized 
+                            ? "bg-warning/10 text-warning border-warning/30 hover:bg-warning/20 shadow-sm" 
+                            : "bg-base text-text-main border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5"
+                        )}
+                        title={isMaximized ? "Collapse to standard modal size" : "Expand viewer to fill entire device screen"}
+                      >
+                        {isMaximized ? <Minimize2 className="w-3.5 h-3.5 text-warning" /> : <Maximize2 className="w-3.5 h-3.5" />}
+                        <span className="hidden sm:inline">{isMaximized ? "Exit Focus" : "Fit Screen"}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {pdfLoading ? (
+                    <div className="flex-grow flex flex-col items-center justify-center text-text-muted gap-3 py-12">
+                      <div className="w-8 h-8 border-3 border-warning border-t-transparent rounded-full animate-spin" />
+                      <div className="text-center">
+                        <p className="font-bold text-text-main text-xs">Analyzing PDF resources...</p>
+                        <p className="text-[10px] text-text-muted mt-0.5">Assembling security hashes and formatting vector frames</p>
+                      </div>
+                    </div>
+                  ) : pdfError ? (
+                    /* Fall back to standard browser iframe if PDF.js engine is blocked */
+                    <div className="flex-grow flex flex-col relative w-full h-full min-h-[400px]">
+                      <iframe
+                        key={`${pdfPage}-${pdfZoom}-${resolvedPdfUrl}`}
+                        src={`${resolvedPdfUrl}#page=${pdfPage || 1}&zoom=${pdfZoom}`}
+                        className="w-full h-full flex-grow border-0 rounded-xl bg-white"
+                        title={resource.title}
+                      />
+                    </div>
+                  ) : resolvedPdfUrl ? (
+                    /* Custom Interactive High Performance PDF Canvas Viewer */
+                    <div 
+                      ref={containerRef}
+                      className="flex-1 overflow-auto flex justify-center items-start bg-black/5 dark:bg-black/25 p-2 rounded-xl border border-black/5 dark:border-white/5 shadow-inner"
+                    >
+                      <canvas 
+                        ref={canvasRef} 
+                        className="shadow-xl rounded-lg bg-white max-w-full"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex-grow flex flex-col items-center justify-center text-text-muted gap-2 font-mono text-xs">
+                      <div className="w-6 h-6 border-2 border-warning border-t-transparent rounded-full animate-spin" />
+                      <span>Resolving PDF secure parameters...</span>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <>
@@ -669,6 +1056,25 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
 
                 {/* Download Menu Buttons */}
                 <div className="space-y-3.5">
+                  {resource.pdfUrl && (
+                    <button
+                      onClick={handleDownloadActualPdf}
+                      className="w-full relative p-4 bg-warning/5 hover:bg-warning/10 text-left rounded-2xl border border-warning/15 hover:border-warning/30 transition-all flex items-start gap-3 group/dl text-xs cursor-pointer"
+                    >
+                      <div className="p-2 bg-warning/15 text-warning rounded-lg group-hover/dl:bg-warning/20 transition-colors">
+                        <FileDown className="w-4.5 h-4.5" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-text-main group-hover/dl:text-warning transition-colors flex items-center gap-1">
+                          Original PDF Document
+                        </div>
+                        <div className="text-[10px] text-text-muted mt-0.5">
+                          Download the actual uploaded PDF file ({resource.size || 'Original Size'}) to read in your local system viewer.
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => triggerFileDownload('html')}
                     className="w-full relative p-4 bg-base hover:bg-black/5 dark:hover:bg-white/5 text-left rounded-2xl border border-black/15 dark:border-white/10 hover:border-warning/40 transition-all flex items-start gap-3 group/dl text-xs cursor-pointer"

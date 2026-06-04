@@ -95,8 +95,45 @@ function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage = "Operati
   });
 }
 
+const convertToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+};
+
+async function uploadToServerDisk(file: File, onStatusChange?: (msg: string) => void): Promise<string> {
+  if (onStatusChange) onStatusChange('Routing upload safely to High-Performance Server storage...');
+  const base64Data = await convertToBase64(file);
+  const response = await fetch('/api/upload', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      fileName: file.name,
+      fileType: file.type,
+      base64Data: base64Data
+    })
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Server side upload pipeline rejected: ${text || response.statusText}`);
+  }
+
+  const data = await response.json();
+  if (data && data.url) {
+    return data.url;
+  }
+  throw new Error('Malformed server file-upload response');
+}
+
 /**
- * Resilient upload utility that tries Cloud Storage with a fail-fast timeout and falls back to IndexedDB.
+ * Resilient upload utility that tries Cloud Storage with a fail-fast timeout,
+ * falls back to our Express server uploads disk, and ultimately falls back to IndexedDB.
  */
 export async function uploadFileResilient(
   file: File, 
@@ -118,14 +155,22 @@ export async function uploadFileResilient(
       
       return { url: downloadUrl, isFallback: false };
     } catch (err: any) {
-      console.warn("Cloud storage upload rejected or timed out. Falling back to high-fidelity offline system:", err);
+      console.warn("Cloud storage upload rejected or timed out. Handing off to Express server disk layer:", err);
     }
   } else {
-    console.warn("Firebase Storage is is not initialized in firebase.ts. Resorting to local persistent databases.");
+    console.warn("Firebase Storage is not initialized in firebase.ts. Resorting to Express server disk layer.");
   }
 
-  // Fallback Phase
-  if (onStatusChange) onStatusChange('Switching to high-performance offline Browser Database (IndexedDB)...');
+  // Fallback 1: High-performance shared Server Disk storage
+  try {
+    const serverUrl = await uploadToServerDisk(file, onStatusChange);
+    return { url: serverUrl, isFallback: false };
+  } catch (serverErr) {
+    console.warn("Express server disk write failed or rejected. Resorting to fallback local IndexedDB database:", serverErr);
+  }
+
+  // Fallback 2: Local IndexedDB (strictly browser-local offline sandbox)
+  if (onStatusChange) onStatusChange('Switching to local browser sandbox database (IndexedDB)...');
   
   // Create a clean key for IndexedDB
   const uniqueId = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;

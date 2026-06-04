@@ -341,6 +341,17 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
         } else {
           throw new Error("Could not find local PDF file in the browser database.");
         }
+      } else if (url.startsWith('/') || url.startsWith(window.location.origin) || !url.includes('://')) {
+        try {
+          const res = await fetch(url);
+          if (res.ok) {
+            const blob = await res.blob();
+            url = URL.createObjectURL(blob);
+            isBlob = true;
+          }
+        } catch (fetchErr) {
+          console.warn("Could not fetch same-origin asset as Blob. Falling back to direct link download:", fetchErr);
+        }
       }
       
       const link = document.createElement('a');
@@ -356,7 +367,7 @@ export function PdfViewerModal({ isOpen, onClose, resource }: PdfViewerModalProp
       document.body.removeChild(link);
       
       if (isBlob) {
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
       }
       
       setDownloadSuccess(true);

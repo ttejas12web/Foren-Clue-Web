@@ -296,6 +296,24 @@ function ResourceCard({ item, icon: Icon, onView }: { item: any, icon: any, onVi
         } catch (err) {
           console.error("Local file retrieval failed for download:", err);
         }
+      } else if (item.pdfUrl.startsWith('/') || item.pdfUrl.startsWith(window.location.origin) || !item.pdfUrl.includes('://')) {
+        try {
+          const res = await fetch(item.pdfUrl);
+          if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${(item.title || 'StudyGuide').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            return;
+          }
+        } catch (err) {
+          console.error("Same-origin fetch failed for download:", err);
+        }
       }
       window.open(item.pdfUrl, '_blank');
       return;

@@ -52,7 +52,17 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // Create uploads directory on server start if it doesn't exist
+  const uploadsDir = path.join(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  // Serve uploaded files statically
+  app.use("/api/uploads", express.static(uploadsDir));
 
   function getRazorpay() {
     const key_id = process.env.RAZORPAY_KEY_ID;
@@ -66,6 +76,41 @@ async function startServer() {
   // API routes FIRST
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
+  });
+
+  // Base64 server disk file upload endpoint for resilient backup
+  app.post("/api/upload", async (req, res) => {
+    try {
+      const { fileName, fileType, base64Data } = req.body;
+      if (!base64Data) {
+        return res.status(400).json({ error: "Missing base64Data of file." });
+      }
+
+      // Stripping data URL prefix if sent
+      const base64Clean = base64Data.replace(/^data:.*?;base64,/, "");
+      const buffer = Buffer.from(base64Clean, "base64");
+
+      const sanitizedName = (fileName || `upload_${Date.now()}`).replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      const uniqueFileName = `${Date.now()}_${sanitizedName}`;
+      const filePath = path.join(uploadsDir, uniqueFileName);
+
+      await fs.promises.writeFile(filePath, buffer);
+      console.log(`[Server disk upload] File written: ${uniqueFileName} (${buffer.length} bytes)`);
+
+      // Construct a relative URL so it resolves correctly on any binding domain e.g. forenclue.in
+      const relativeUrl = `/api/uploads/${uniqueFileName}`;
+
+      res.json({
+        success: true,
+        url: relativeUrl,
+        relativePath: relativeUrl,
+        fileName: uniqueFileName,
+        size: buffer.length
+      });
+    } catch (err: any) {
+      console.error("[Server disk upload error]:", err);
+      res.status(500).json({ error: err.message || "Failed to save file to server storage." });
+    }
   });
 
   app.post("/api/create-order", async (req, res) => {

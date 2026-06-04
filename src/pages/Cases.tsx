@@ -541,7 +541,7 @@ export default function Cases() {
               <div className="bg-surface border border-black/10 dark:border-white/5 p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
                 <div className="md:col-span-1">
                   <div className="aspect-video sm:aspect-square md:aspect-video rounded-2xl overflow-hidden border border-black/10 dark:border-white/10 bg-black bg-opacity-40 h-full">
-                    <img src={selectedCase.image} className="w-full h-full object-cover grayscale opacity-85 hover:opacity-100 hover:grayscale-0 transition-all duration-500" alt="Primary Evidence" referrerPolicy="no-referrer" />
+                    <img src={selectedCase.image} className="w-full h-full object-cover grayscale opacity-85 hover:opacity-100 hover:grayscale-0 transition-all duration-500" alt={`Primary evidence for criminal case: ${selectedCase.title}`} referrerPolicy="no-referrer" />
                   </div>
                 </div>
 

@@ -14,6 +14,27 @@ export function ForensicGridCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [isLightMode, setIsLightMode] = useState(false);
+
+  useEffect(() => {
+    // Initial check
+    const checkTheme = () => {
+      setIsLightMode(document.documentElement.classList.contains('light'));
+    };
+    checkTheme();
+
+    // Observe theme changing class on the html element
+    const observer = new MutationObserver(() => {
+      checkTheme();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -76,9 +97,19 @@ export function ForensicGridCanvas() {
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
+      // Theme-based colors
+      const gridColor = isLightMode ? 'rgba(2, 132, 199, 0.08)' : 'rgba(0, 240, 255, 0.05)';
+      const laserGlowStart = isLightMode ? 'rgba(2, 132, 199, 0)' : 'rgba(0, 240, 255, 0)';
+      const laserGlowMid = isLightMode ? 'rgba(2, 132, 199, 0.06)' : 'rgba(0, 240, 255, 0.06)';
+      const laserGlowEnd = isLightMode ? 'rgba(2, 132, 199, 0.15)' : 'rgba(0, 240, 255, 0.15)';
+      const laserFilamentColor = isLightMode ? 'rgba(2, 132, 199, 0.5)' : 'rgba(0, 240, 255, 0.4)';
+      const radarRingColor = isLightMode ? 'rgba(2, 132, 199, 0.08)' : 'rgba(234, 179, 8, 0.04)';
+      const radarBeamColor = isLightMode ? 'rgba(2, 132, 199, 0.25)' : 'rgba(0, 240, 255, 0.15)';
+      const streamBaseColor = isLightMode ? 'rgba(2, 132, 199, ' : 'rgba(0, 240, 255, ';
+
       // 1. Draw subtle ambient high-tech grid (Gridlines spacing 45px)
       const gridSize = 45;
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
+      ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
 
       // Vertical lines
@@ -107,14 +138,14 @@ export function ForensicGridCanvas() {
 
       // Draw laser glow trail
       const gradient = ctx.createLinearGradient(0, scanLineY - (15 * scanDirection), 0, scanLineY);
-      gradient.addColorStop(0, 'rgba(0, 240, 255, 0)');
-      gradient.addColorStop(0.5, 'rgba(0, 240, 255, 0.06)');
-      gradient.addColorStop(1, 'rgba(0, 240, 255, 0.15)');
+      gradient.addColorStop(0, laserGlowStart);
+      gradient.addColorStop(0.5, laserGlowMid);
+      gradient.addColorStop(1, laserGlowEnd);
       ctx.fillStyle = gradient;
       ctx.fillRect(0, scanDirection > 0 ? scanLineY - 30 : scanLineY, width, 30);
 
       // Draw exact scanning laser filament
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+      ctx.strokeStyle = laserFilamentColor;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(0, scanLineY);
@@ -128,7 +159,7 @@ export function ForensicGridCanvas() {
       const radarRadius = Math.min(width, height) * 0.4;
 
       // Draw radar target concentric rings
-      ctx.strokeStyle = 'rgba(234, 179, 8, 0.04)'; // Subtle warning yellow
+      ctx.strokeStyle = radarRingColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.arc(radarCenterX, radarCenterY, radarRadius * 0.4, 0, Math.PI * 2);
@@ -137,7 +168,7 @@ export function ForensicGridCanvas() {
       ctx.stroke();
 
       // Radar sweeping beam line
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+      ctx.strokeStyle = radarBeamColor;
       ctx.beginPath();
       ctx.moveTo(radarCenterX, radarCenterY);
       ctx.lineTo(
@@ -149,8 +180,9 @@ export function ForensicGridCanvas() {
       // 4. Update and Render Digital Base Particles (DNA Typing & Cyber Streams)
       ctx.font = '9px monospace';
       particles.forEach((p) => {
-        // Render characters
-        ctx.fillStyle = `rgba(0, 240, 255, ${p.opacity * (0.6 + 0.4 * Math.sin(scanLineY / 40))})`;
+        // Render characters with higher active state opacity in light mode
+        const mult = isLightMode ? 2.0 : 1.0;
+        ctx.fillStyle = `${streamBaseColor}${Math.min(0.9, p.opacity * mult * (0.6 + 0.4 * Math.sin(scanLineY / 40)))})`;
         ctx.fillText(p.char, p.x, p.y);
 
         // Slow updates
@@ -177,21 +209,28 @@ export function ForensicGridCanvas() {
         if (node.pulseSize > 8) node.pulseDirection = -1;
         if (node.pulseSize < 2) node.pulseDirection = 1;
 
+        // Colors for crosshair marker
+        const crosshairStroke = isLightMode ? 'rgba(217, 119, 6, 0.55)' : 'rgba(234, 179, 8, 0.35)';
+        const pulseStroke = isLightMode ? `rgba(217, 119, 6, ${0.6 - (node.pulseSize / 20)})` : `rgba(234, 179, 8, ${0.4 - (node.pulseSize / 20)})`;
+        const centerHairStroke = isLightMode ? 'rgba(217, 119, 6, 0.65)' : 'rgba(234, 179, 8, 0.4)';
+        const idColor = isLightMode ? 'rgba(180, 83, 9, 0.9)' : 'rgba(234, 179, 8, 0.7)';
+        const labelColor = isLightMode ? 'rgba(2, 132, 199, 0.85)' : 'rgba(0, 240, 255, 0.6)';
+
         // Draw crosshair circle
-        ctx.strokeStyle = 'rgba(234, 179, 8, 0.35)'; // Warmer warning accent tint
+        ctx.strokeStyle = crosshairStroke;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(nx, ny, 6, 0, Math.PI * 2);
         ctx.stroke();
 
         // Pulsing radar ripple ring
-        ctx.strokeStyle = `rgba(234, 179, 8, ${0.4 - (node.pulseSize / 20)})`;
+        ctx.strokeStyle = pulseStroke;
         ctx.beginPath();
         ctx.arc(nx, ny, 6 + node.pulseSize, 0, Math.PI * 2);
         ctx.stroke();
 
         // Precise Hairlines inside crosshairs
-        ctx.strokeStyle = 'rgba(234, 179, 8, 0.4)';
+        ctx.strokeStyle = centerHairStroke;
         ctx.beginPath();
         ctx.moveTo(nx - 10, ny);
         ctx.lineTo(nx + 10, ny);
@@ -201,9 +240,9 @@ export function ForensicGridCanvas() {
 
         // Draw micro science label text (using pixel-perfect mono styling)
         ctx.font = 'xx-small monospace';
-        ctx.fillStyle = 'rgba(234, 179, 8, 0.7)';
+        ctx.fillStyle = idColor;
         ctx.fillText(`ID:[${node.id}]`, nx + 12, ny - 2);
-        ctx.fillStyle = 'rgba(0, 240, 255, 0.6)';
+        ctx.fillStyle = labelColor;
         ctx.fillText(node.label, nx + 12, ny + 8);
       });
 
@@ -216,7 +255,7 @@ export function ForensicGridCanvas() {
       cancelAnimationFrame(animationFrameId);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [isLightMode]);
 
   // Safe callback verifying video state
   const handleVideoCanPlay = () => {
@@ -240,10 +279,15 @@ export function ForensicGridCanvas() {
         muted
         playsInline
         onCanPlay={handleVideoCanPlay}
-        className={`w-full h-full object-cover mix-blend-screen scale-[1.03] transition-opacity duration-1000 ${
-          videoLoaded ? 'opacity-35 dark:opacity-45' : 'opacity-0'
+        className={`w-full h-full object-cover scale-[1.03] transition-all duration-1000 ${
+          videoLoaded ? (isLightMode ? 'opacity-20' : 'opacity-35 dark:opacity-45') : 'opacity-0'
         }`}
-        style={{ filter: "hue-rotate(185deg) brightness(0.95) contrast(1.15)" }}
+        style={{ 
+          mixBlendMode: isLightMode ? 'multiply' : 'screen',
+          filter: isLightMode 
+            ? "invert(1) hue-rotate(5deg) brightness(1.15) contrast(1.1)" 
+            : "hue-rotate(185deg) brightness(0.95) contrast(1.15)" 
+        }}
       >
         {/* We use highly optimized digital tech loop videos on high-bandwidth static networks */}
         <source 
@@ -260,18 +304,21 @@ export function ForensicGridCanvas() {
       {/* HTML5 Canvas overlay layer: always active, lightweight, pixel-perfect */}
       <canvas 
         ref={canvasRef} 
-        className="absolute inset-0 w-full h-full mix-blend-screen pointer-events-none"
+        style={{ mixBlendMode: isLightMode ? 'multiply' : 'screen' }}
+        className="absolute inset-0 w-full h-full pointer-events-none"
       />
 
       {/* Futuristic Ambient Backdrop Gradients and Masks (Ensure text is perfectly readable with ideal contrast) */}
       <div 
-        className="absolute inset-0 z-10" 
+        className="absolute inset-0 z-10 transition-all duration-500" 
         style={{ 
-          background: "radial-gradient(circle at 50% 50%, rgba(13, 21, 46, 0.4) 10%, rgba(4, 8, 20, 0.85) 80%, rgba(4, 8, 20, 1) 100%)" 
+          background: isLightMode 
+            ? "radial-gradient(circle at 50% 50%, rgba(2, 132, 199, 0.05) 10%, rgba(248, 250, 252, 0.85) 80%, rgba(248, 250, 252, 1) 100%)"
+            : "radial-gradient(circle at 50% 50%, rgba(13, 21, 46, 0.4) 10%, rgba(4, 8, 20, 0.85) 80%, rgba(4, 8, 20, 1) 100%)"
         }} 
       />
-      <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-[#040814] to-transparent z-15" />
-      <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#040814] to-transparent z-15" />
+      <div className={`absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t ${isLightMode ? 'from-[#f8fafc]' : 'from-[#040814]'} to-transparent z-15 transition-all duration-500`} />
+      <div className={`absolute inset-x-0 top-0 h-32 bg-gradient-to-b ${isLightMode ? 'from-[#f8fafc]' : 'from-[#040814]'} to-transparent z-15 transition-all duration-500`} />
     </div>
   );
 }

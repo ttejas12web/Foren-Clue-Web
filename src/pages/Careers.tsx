@@ -1,3 +1,4 @@
+import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { DNAViewer } from "@/components/ui/ThreeDElement";
 import { SEO } from "@/components/layout/SEO";

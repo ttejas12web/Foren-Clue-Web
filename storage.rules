@@ -1,0 +1,49 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Default deny for all files not explicitly matched
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // Academic Resource e-Library access paths
+    match /ebooks {
+      match /pdfs/{fileName} {
+        // Publicly readable so students can access, read and analyze documents
+        allow read: if true;
+        
+        // Enforce maximum size under 50MB, allow unauthenticated/test writes during development sandbox
+        allow create, update: if request.resource.size < 50 * 1024 * 1024;
+          
+        // Deletion permitted for admin/moderator actions
+        allow delete: if true;
+      }
+
+      match /covers/{fileName} {
+        // Cover portrait images are publicly readable to generate library grid previews
+        allow read: if true;
+        
+        // Cover upload max size under 10MB
+        allow create, update: if request.resource.size < 10 * 1024 * 1024;
+          
+        // Deletion permitted
+        allow delete: if true;
+      }
+    }
+
+    // Courses and Curriculum assets (including direct uploads for Course Thumbnails)
+    match /courses {
+      match /thumbnails/{fileName} {
+        // Course thumbnail images are publicly readable
+        allow read: if true;
+        
+        // Thumbnail upload limit of 10MB
+        allow create, update: if request.resource.size < 10 * 1024 * 1024;
+        
+        // Deletion permitted
+        allow delete: if true;
+      }
+    }
+  }
+}

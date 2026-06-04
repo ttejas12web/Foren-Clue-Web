@@ -96,11 +96,22 @@
     },
     "EBook": {
       "title": "E-Book",
-      "description": "Library and reference books",
+      "description": "Library and reference books and documents",
       "type": "object",
       "properties": {
         "title": { "type": "string" },
-        "pdfUrl": { "type": "string" }
+        "pdfUrl": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "author": { "type": "string" },
+        "year": { "type": "string" },
+        "category": { "type": "string" },
+        "tabCategory": { "type": "string" },
+        "type": { "type": "string" },
+        "size": { "type": "string" },
+        "desc": { "type": "string" },
+        "uploaded": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
       },
       "required": ["title", "pdfUrl"]
     },

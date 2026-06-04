@@ -8,8 +8,10 @@ import {
   ExternalLink, LogOut, Loader2, Sparkles, HelpCircle, 
   Globe, Edit3, MessageSquare
 } from 'lucide-react';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ResilientImage, uploadFileResilient } from '@/lib/localFileStore';
 
 export default function Admin() {
   const { user, isAdmin, adminLogin, logout } = useAuth();
@@ -71,6 +73,19 @@ export default function Admin() {
     pdfUrl: '',
     desc: ''
   });
+
+  // Direct Storage Upload loading states
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
+  const [isUploadingThumb, setIsUploadingThumb] = useState(false);
+
+  // Individual file upload feedback states
+  const [pdfErrorText, setPdfErrorText] = useState('');
+  const [pdfSuccessText, setPdfSuccessText] = useState('');
+  const [coverErrorText, setCoverErrorText] = useState('');
+  const [coverSuccessText, setCoverSuccessText] = useState('');
+  const [thumbErrorText, setThumbErrorText] = useState('');
+  const [thumbSuccessText, setThumbSuccessText] = useState('');
 
   // Website copy state
   const [copiedTexts, setCopiedTexts] = useState<any[]>([]);
@@ -216,6 +231,116 @@ export default function Admin() {
     } catch (err: any) {
       console.error(err);
       setErrMsg(`Failed to submit: ${err.message}`);
+    }
+  };
+
+  const handlePdfUploadDirect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPdfErrorText('');
+    setPdfSuccessText('');
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+        setPdfErrorText('Please select a valid PDF document.');
+        return;
+      }
+      setIsUploadingPdf(true);
+      setPdfSuccessText('Processing eLibrary PDF...');
+      try {
+        const cleanName = `ebooks/pdfs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const uploadResult = await uploadFileResilient(file, cleanName, (msg) => setPdfSuccessText(msg));
+        const downloadUrl = uploadResult.url;
+        
+        // Calculate file size
+        const bytes = file.size;
+        const sizeStr = bytes > 1024 * 1024 
+          ? `${(bytes / (1024 * 1024)).toFixed(1)}MB` 
+          : `${Math.round(bytes / 1024)}KB`;
+
+        setNewEbook(prev => ({
+          ...prev,
+          pdfUrl: downloadUrl,
+          size: sizeStr
+        }));
+        setPdfSuccessText(uploadResult.isFallback 
+          ? `PDF saved offline successfully! (${file.name})` 
+          : `PDF uploaded successfully: ${file.name}`
+        );
+        setPdfErrorText('');
+      } catch (err: any) {
+        console.error(err);
+        setPdfErrorText(`PDF upload failed: ${err.message || err}`);
+        setPdfSuccessText('');
+      } finally {
+        setIsUploadingPdf(false);
+      }
+    }
+  };
+
+  const handleCoverUploadDirect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCoverErrorText('');
+    setCoverSuccessText('');
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        setCoverErrorText('Please select a valid image file for the book cover.');
+        return;
+      }
+      setIsUploadingCover(true);
+      setCoverSuccessText('Processing cover image...');
+      try {
+        const cleanName = `ebooks/covers/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const uploadResult = await uploadFileResilient(file, cleanName, (msg) => setCoverSuccessText(msg));
+        const downloadUrl = uploadResult.url;
+        setNewEbook(prev => ({
+          ...prev,
+          image: downloadUrl
+        }));
+        setCoverSuccessText(uploadResult.isFallback
+          ? `Cover image saved offline successfully! (${file.name})`
+          : `Cover image uploaded successfully: ${file.name}`
+        );
+        setCoverErrorText('');
+      } catch (err: any) {
+        console.error(err);
+        setCoverErrorText(`Cover image upload failed: ${err.message || err}`);
+        setCoverSuccessText('');
+      } finally {
+        setIsUploadingCover(false);
+      }
+    }
+  };
+
+  const handleThumbUploadDirect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setThumbErrorText('');
+    setThumbSuccessText('');
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (!file.type.startsWith('image/')) {
+        setThumbErrorText('Please select a valid image file for the course thumbnail.');
+        return;
+      }
+      setIsUploadingThumb(true);
+      setThumbSuccessText('Processing course thumbnail...');
+      try {
+        const cleanName = `courses/thumbnails/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+        const uploadResult = await uploadFileResilient(file, cleanName, (msg) => setThumbSuccessText(msg));
+        const downloadUrl = uploadResult.url;
+        setNewCourse(prev => ({
+          ...prev,
+          thumbnail: downloadUrl
+        }));
+        setThumbSuccessText(uploadResult.isFallback
+          ? `Course thumbnail saved offline successfully! (${file.name})`
+          : `Course thumbnail uploaded successfully: ${file.name}`
+        );
+        setThumbErrorText('');
+      } catch (err: any) {
+        console.error(err);
+        setThumbErrorText(`Course thumbnail upload failed: ${err.message || err}`);
+        setThumbSuccessText('');
+      } finally {
+        setIsUploadingThumb(false);
+      }
     }
   };
 
@@ -653,7 +778,7 @@ export default function Admin() {
                               value={newCourse.category} 
                               onChange={e => setNewCourse({...newCourse, category: e.target.value})} 
                               placeholder="Cyber, Ballistics, etc." 
-                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
+                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2.5 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
                             />
                           </div>
                           <div>
@@ -663,18 +788,40 @@ export default function Admin() {
                               value={newCourse.duration} 
                               onChange={e => setNewCourse({...newCourse, duration: e.target.value})} 
                               placeholder="e.g. 14 Hours" 
-                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
+                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2.5 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
                             />
                           </div>
-                          <div>
-                            <label className="block text-[10px] font-mono text-text-muted uppercase mb-1">Thumbnail Cover Image URL</label>
+                          <div className="bg-base/30 border border-black/5 dark:border-white/5 rounded-xl p-2.5 space-y-2">
+                            <label className="block text-[10px] font-mono text-text-muted uppercase">Thumbnail (URL or Upload)</label>
                             <input 
                               type="text" 
                               value={newCourse.thumbnail} 
                               onChange={e => setNewCourse({...newCourse, thumbnail: e.target.value})} 
-                              placeholder="Unsplash / Google Drive asset link" 
-                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
+                              placeholder="URL or click below to upload" 
+                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-lg py-1.5 px-2 text-[11px] font-semibold outline-none text-text-main focus:border-warning/50 transition-colors"
                             />
+                            <div className="flex items-center gap-2">
+                              <label className="flex-1 flex items-center justify-center gap-1.5 bg-warning/10 hover:bg-warning/15 border border-warning/20 hover:border-warning/30 text-warning px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-colors">
+                                <Upload size={12} />
+                                <span>{isUploadingThumb ? 'Uploading...' : 'Upload Image'}</span>
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  onChange={handleThumbUploadDirect} 
+                                  className="hidden" 
+                                  disabled={isUploadingThumb}
+                                />
+                              </label>
+                              {newCourse.thumbnail && (
+                                <ResilientImage src={newCourse.thumbnail} alt="Preview" className="w-6 h-6 rounded object-cover border border-black/10 dark:border-white/10" />
+                              )}
+                            </div>
+                            {thumbSuccessText && (
+                              <p className="text-[10px] font-mono text-green-500 mt-1.5 bg-green-500/5 px-2 py-1 rounded border border-green-500/10">{thumbSuccessText}</p>
+                            )}
+                            {thumbErrorText && (
+                              <p className="text-[10px] font-mono text-red-500 mt-1.5 bg-red-500/5 px-2 py-1 rounded border border-red-500/10">{thumbErrorText}</p>
+                            )}
                           </div>
                         </div>
 
@@ -817,7 +964,7 @@ export default function Admin() {
                           {courses.map((c) => (
                             <div key={c.docId} className="flex items-center justify-between p-3 bg-base border border-black/5 dark:border-white/5 rounded-xl">
                               <div className="flex items-center gap-4">
-                                <img src={c.thumbnail} className="w-16 h-10 object-cover rounded-lg" />
+                                <ResilientImage src={c.thumbnail || ''} className="w-16 h-10 object-cover rounded-lg" alt={c.title || 'Course thumbnail'} />
                                 <div className="text-left">
                                   <h4 className="text-xs font-black uppercase text-text-main leading-tight">{c.title}</h4>
                                   <span className="text-[10px] uppercase font-mono tracking-widest text-warning font-black">{c.level} PHASE • {c.price} INR</span>
@@ -941,26 +1088,77 @@ export default function Admin() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-[10px] font-mono text-text-muted uppercase mb-1">Book Image URL *</label>
-                            <input 
-                              type="text" 
-                              value={newEbook.image} 
-                              onChange={e => setNewEbook({...newEbook, image: e.target.value})} 
-                              placeholder="e.g. Google Drive/Dropbox image sharing link" 
-                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
-                            />
+                          <div className="bg-base/30 border border-black/10 dark:border-white/5 rounded-2xl p-4">
+                            <label className="block text-[10px] font-mono text-text-muted uppercase mb-1">Cover Image (URL or Upload)</label>
+                            <div className="space-y-2">
+                              <input 
+                                type="text" 
+                                value={newEbook.image} 
+                                onChange={e => setNewEbook({...newEbook, image: e.target.value})} 
+                                placeholder="e.g. Image URL" 
+                                className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
+                              />
+                              <div className="flex items-center gap-2">
+                                <label className="flex-1 flex items-center justify-center gap-2 bg-warning/10 hover:bg-warning/15 border border-warning/20 hover:border-warning/30 text-warning px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                                  <Upload size={13} />
+                                  <span>{isUploadingCover ? 'Uploading...' : 'Upload Local Image'}</span>
+                                  <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleCoverUploadDirect} 
+                                    className="hidden" 
+                                    disabled={isUploadingCover}
+                                  />
+                                </label>
+                                {newEbook.image && (
+                                  <ResilientImage src={newEbook.image} alt="Preview" className="w-8 h-8 rounded object-cover border border-black/10 dark:border-white/10" />
+                                )}
+                              </div>
+                              {coverSuccessText && (
+                                <p className="text-[10px] font-mono text-green-500 mt-1.5 bg-green-500/5 px-2 py-1 rounded border border-green-500/10">{coverSuccessText}</p>
+                              )}
+                              {coverErrorText && (
+                                <p className="text-[10px] font-mono text-red-500 mt-1.5 bg-red-500/5 px-2 py-1 rounded border border-red-500/10">{coverErrorText}</p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-[10px] font-mono text-text-muted uppercase mb-1">Document download URL (PDF) *</label>
-                            <input 
-                              type="text" 
-                              value={newEbook.pdfUrl} 
-                              onChange={e => setNewEbook({...newEbook, pdfUrl: e.target.value})} 
-                              placeholder="e.g. Google Drive PDF download link" 
-                              className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
-                              required
-                            />
+
+                          <div className="bg-base/30 border border-black/10 dark:border-white/5 rounded-2xl p-4">
+                            <label className="block text-[10px] font-mono text-text-muted uppercase mb-1">Document File (URL or Upload) *</label>
+                            <div className="space-y-2">
+                              <input 
+                                type="text" 
+                                value={newEbook.pdfUrl} 
+                                onChange={e => setNewEbook({...newEbook, pdfUrl: e.target.value})} 
+                                placeholder="e.g. PDF Download URL" 
+                                className="w-full bg-base border border-black/10 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold outline-none text-text-main focus:border-warning/50 transition-colors"
+                                required
+                              />
+                              <div className="flex items-center gap-2">
+                                <label className="flex-1 flex items-center justify-center gap-2 bg-warning/10 hover:bg-warning/15 border border-warning/20 hover:border-warning/30 text-warning px-3 py-2 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                                  <FileText size={13} />
+                                  <span>{isUploadingPdf ? 'Uploading...' : 'Upload Local PDF'}</span>
+                                  <input 
+                                    type="file" 
+                                    accept="application/pdf" 
+                                    onChange={handlePdfUploadDirect} 
+                                    className="hidden" 
+                                    disabled={isUploadingPdf}
+                                  />
+                                </label>
+                                {newEbook.pdfUrl && (
+                                  <div className="text-xs font-mono text-green-400 bg-green-500/10 px-2 py-1.5 rounded-xl border border-green-500/20 truncate max-w-[150px]">
+                                    Uploaded!
+                                  </div>
+                                )}
+                              </div>
+                              {pdfSuccessText && (
+                                <p className="text-[10px] font-mono text-green-500 mt-1.5 bg-green-500/5 px-2 py-1 rounded border border-green-500/10">{pdfSuccessText}</p>
+                              )}
+                              {pdfErrorText && (
+                                <p className="text-[10px] font-mono text-red-500 mt-1.5 bg-red-500/5 px-2 py-1 rounded border border-red-500/10">{pdfErrorText}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -1013,7 +1211,7 @@ export default function Admin() {
                           {ebooks.map((b) => (
                             <div key={b.docId} className="flex items-center justify-between p-3 bg-base border border-black/5 dark:border-white/5 rounded-xl">
                               <div className="flex items-center gap-4 text-left">
-                                <img src={b.image} className="w-10 h-14 object-contain bg-surface border border-black/5 rounded shadow" />
+                                <ResilientImage src={b.image || b.coverImage || ''} className="w-10 h-14 object-contain bg-surface border border-black/5 rounded shadow" alt={b.title || 'eBook Cover'} />
                                 <div>
                                   <h4 className="text-xs font-black uppercase text-text-main leading-tight line-clamp-1">{b.title}</h4>
                                   <span className="text-[10px] font-mono uppercase tracking-widest text-warning font-black">{b.tabCategory} • {b.author || 'Author unspecified'}</span>

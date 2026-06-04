@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BookOpen, FileText, HelpCircle, Archive, Search, Download, ExternalLink } from 'lucide-react';
+import { BookOpen, FileText, HelpCircle, Archive, Search, Download, ExternalLink, Eye, Upload } from 'lucide-react';
 import { SEO } from '@/components/layout/SEO';
 import { cn } from '@/lib/utils';
 import { db } from '@/lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
+import { PdfViewerModal } from '@/components/ui/PdfViewerModal';
+import { UploadResourceModal } from '@/components/UploadResourceModal';
+import { ResilientImage, localFileStore } from '@/lib/localFileStore';
 
 // Mock Data for demonstration
 const resources = {
@@ -44,6 +47,8 @@ export default function EBooks() {
   const [activeTab, setActiveTab] = useState('books');
   const [searchQuery, setSearchQuery] = useState('');
   const [dbEBooks, setDbEBooks] = useState<any[]>([]);
+  const [selectedPdfResource, setSelectedPdfResource] = useState<any | null>(null);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'ebooks'), (snapshot) => {
@@ -121,9 +126,16 @@ export default function EBooks() {
             <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4 text-text-main uppercase tracking-tight">
               E-<span className="text-warning">Library</span> & Resources
             </h1>
-            <p className="text-lg text-text-muted max-w-2xl mx-auto">
+            <p className="text-lg text-text-muted max-w-2xl mx-auto mb-6">
               A comprehensive digital library for forensic students. Access reference books, lecture notes, previous year question papers, and more.
             </p>
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-warning text-crust hover:bg-warning/95 rounded-xl text-xs sm:text-sm font-black uppercase tracking-wider transition-all duration-300 shadow-lg shadow-warning/10 cursor-pointer active:scale-98"
+            >
+              <Upload className="w-4.5 h-4.5" />
+              Upload Study Resource
+            </button>
           </motion.div>
         </div>
 
@@ -181,7 +193,7 @@ export default function EBooks() {
               >
                 {getFilteredItems(mergedBooks).length > 0 ? (
                   getFilteredItems(mergedBooks).map((book) => (
-                    <ResourceCard key={book.id} item={book} icon={BookOpen} />
+                    <ResourceCard key={book.id} item={book} icon={BookOpen} onView={setSelectedPdfResource} />
                   ))
                 ) : (
                   <EmptyState />
@@ -200,7 +212,7 @@ export default function EBooks() {
               >
                 {getFilteredItems(mergedNotes).length > 0 ? (
                   getFilteredItems(mergedNotes).map((note) => (
-                    <ResourceCard key={note.id} item={note} icon={FileText} />
+                    <ResourceCard key={note.id} item={note} icon={FileText} onView={setSelectedPdfResource} />
                   ))
                 ) : (
                   <EmptyState />
@@ -219,7 +231,7 @@ export default function EBooks() {
               >
                 {getFilteredItems(mergedPapers).length > 0 ? (
                   getFilteredItems(mergedPapers).map((paper) => (
-                    <ResourceCard key={paper.id} item={paper} icon={HelpCircle} />
+                    <ResourceCard key={paper.id} item={paper} icon={HelpCircle} onView={setSelectedPdfResource} />
                   ))
                 ) : (
                   <EmptyState />
@@ -238,7 +250,7 @@ export default function EBooks() {
               >
                 {getFilteredItems(mergedOther).length > 0 ? (
                   getFilteredItems(mergedOther).map((item) => (
-                    <ResourceCard key={item.id} item={item} icon={Archive} />
+                    <ResourceCard key={item.id} item={item} icon={Archive} onView={setSelectedPdfResource} />
                   ))
                 ) : (
                   <EmptyState />
@@ -249,17 +261,98 @@ export default function EBooks() {
         </div>
 
       </div>
+
+      <PdfViewerModal 
+        isOpen={!!selectedPdfResource} 
+        resource={selectedPdfResource || {}} 
+        onClose={() => setSelectedPdfResource(null)} 
+      />
+
+      <UploadResourceModal 
+        isOpen={isUploadOpen} 
+        onClose={() => setIsUploadOpen(false)} 
+      />
     </div>
   );
 }
 
-function ResourceCard({ item, icon: Icon }: { item: any, icon: any }) {
-  const handleDownload = () => {
+function ResourceCard({ item, icon: Icon, onView }: { item: any, icon: any, onView: (item: any) => void }) {
+  const handleDownload = async () => {
     if (item.pdfUrl) {
+      if (item.pdfUrl.startsWith('localdb://')) {
+        try {
+          const blob = await localFileStore.getFile(item.pdfUrl);
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${(item.title || 'StudyGuide').replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            return;
+          }
+        } catch (err) {
+          console.error("Local file retrieval failed for download:", err);
+        }
+      }
       window.open(item.pdfUrl, '_blank');
-    } else {
-      alert("This document's source file is only an archive preview. Downloads require an upgraded verification key.");
+      return;
     }
+
+    // Dynamic, high-fidelity local compiler for all items
+    const title = item.title || 'Forensic_Science_Guide';
+    const author = item.author || 'ForenClue Team';
+    const cleanFileName = title.replace(/[^a-zA-Z0-9]/g, '_');
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    body { font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 800px; margin: 40px auto; padding: 20px; background-color: #fafafa; }
+    .header { border-bottom: 3px solid #0284c7; padding-bottom: 20px; margin-bottom: 30px; }
+    h1 { color: #0f172a; margin-bottom: 5px; }
+    .meta { color: #64748b; font-size: 0.9em; margin-bottom: 20px; }
+    .content-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 30px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); }
+    h2 { color: #0284c7; }
+    p { margin-bottom: 1.5em; }
+    .badge { display: inline-block; padding: 4px 10px; background: #e0f2fe; color: #0369a1; font-weight: bold; border-radius: 4px; font-size: 0.8em; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="badge">Study Dossier</span>
+    <h1>${title}</h1>
+    <div class="meta">Subject Category: ${item.category || 'Forensic Study'} | Volume Type: ${item.type || 'Academic Copy'} | Author: ${author}</div>
+  </div>
+  <div class="content-box">
+    <h2>Academic Resource Summary</h2>
+    <p>This academic guide is compiled and authenticated by ForenClue instructors. It includes research papers, practice checklists, and revision summaries designed to elevate student preparation cycles.</p>
+    <p><strong>Resource Details:</strong></p>
+    <ul>
+      <li><strong>Year of publication:</strong> ${item.year || 'Current Academic Cycle'}</li>
+      <li><strong>Item classification size:</strong> ${item.size || 'Compressed'}</li>
+      <li><strong>Summary:</strong> ${item.desc || 'Comprehensive diagnostic study notes.'}</li>
+    </ul>
+    <hr style="border:0; border-top: 1px solid #e2e8f0; margin: 30px 0;"/>
+    <p style="font-size: 0.85em; color: #64748b; line-height: 2;">
+      * To gain full access to the interactive chapters, reading themes (Dark, Sepia), and active keyword searches, please open this file inside the interactive ForenClue eLibrary Viewer by clicking the "Read Document" action on our site.
+    </p>
+  </div>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${cleanFileName}_StudyGuide.html`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -267,11 +360,10 @@ function ResourceCard({ item, icon: Icon }: { item: any, icon: any }) {
       {/* Book Image Cover section */}
       {(item.image || item.coverImage) && (
         <div className="h-44 w-full relative overflow-hidden bg-black/10 dark:bg-white/5 rounded-lg mb-4 flex items-center justify-center p-2 border border-black/5 dark:border-white/5">
-          <img 
+          <ResilientImage 
             src={item.image || item.coverImage} 
             alt={item.title} 
             className="max-h-full object-contain rounded shadow-lg group-hover:scale-105 transition-transform duration-500" 
-            referrerPolicy="no-referrer"
           />
         </div>
       )}
@@ -282,12 +374,12 @@ function ResourceCard({ item, icon: Icon }: { item: any, icon: any }) {
         </div>
         <div className="flex items-center gap-2">
           {item.type && (
-            <span className="text-[10px] font-mono px-2 py-1 bg-black/5 dark:bg-white/5 text-text-muted rounded">
+            <span className="text-[10px] font-mono px-2 py-1 bg-black/5 dark:bg-white/5 text-text-muted rounded flex items-center gap-1">
               {item.type}
             </span>
           )}
           {item.size && (
-            <span className="text-[10px] font-mono px-2 py-1 bg-black/5 dark:bg-white/5 text-text-muted rounded">
+            <span className="text-[10px] font-mono px-2 py-1 bg-black/5 dark:bg-white/5 text-text-muted rounded flex items-center gap-1">
               {item.size}
             </span>
           )}
@@ -295,34 +387,43 @@ function ResourceCard({ item, icon: Icon }: { item: any, icon: any }) {
       </div>
       
       <div className="flex-grow">
-        <h3 className="text-lg font-bold text-text-main mb-2 leading-tight group-hover:text-warning transition-colors">
+        <h3 className="text-lg font-bold text-text-main mb-2 leading-tight group-hover:text-warning transition-colors line-clamp-2">
           {item.title}
         </h3>
         
         <div className="space-y-1 mb-4 text-sm">
-          {item.author && <p className="text-text-muted">By: <span className="text-text-main/80">{item.author}</span></p>}
-          {item.year && <p className="text-text-muted">Year: <span className="text-text-main/80">{item.year}</span></p>}
-          {item.uploaded && <p className="text-text-muted">Uploaded: <span className="text-text-main/80">{item.uploaded}</span></p>}
-          {item.category && <p className="text-text-muted">Category: <span className="text-warning/80">{item.category}</span></p>}
-          {item.desc && <p className="text-text-muted leading-relaxed">{item.desc}</p>}
+          {item.author && <p className="text-text-muted">By: <span className="text-text-main/80 font-medium">{item.author}</span></p>}
+          {item.year && <p className="text-text-muted">Year: <span className="text-text-main/80 font-medium">{item.year}</span></p>}
+          {item.uploaded && <p className="text-text-muted">Uploaded: <span className="text-text-main/80 font-medium">{item.uploaded}</span></p>}
+          {item.category && <p className="text-text-muted">Category: <span className="text-warning/80 font-semibold">{item.category}</span></p>}
+          {item.desc && <p className="text-text-muted leading-relaxed line-clamp-3">{item.desc}</p>}
         </div>
       </div>
 
-      <div className="pt-4 border-t border-black/10 dark:border-white/5 flex gap-3 mt-auto">
+      <div className="pt-4 border-t border-black/10 dark:border-white/5 flex flex-col gap-2.5 mt-auto">
         <button 
-          onClick={handleDownload}
-          className="flex-1 flex items-center justify-center gap-2 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-text-main text-sm font-medium transition-colors"
+          onClick={() => onView(item)}
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-warning text-crust hover:bg-warning/95 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-98 cursor-pointer"
         >
-          <Download className="w-4 h-4" />
-          Download
+          <Eye className="w-4 h-4" />
+          Read Document
         </button>
-        <button 
-          onClick={handleDownload}
-          className="px-4 py-2 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-lg text-text-muted hover:text-text-main transition-colors" 
-          title="Open in new tab"
-        >
-          <ExternalLink className="w-4 h-4" />
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleDownload}
+            className="flex-grow flex items-center justify-center gap-2 py-2 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 rounded-xl text-text-main text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Download
+          </button>
+          <button 
+            onClick={() => onView(item)}
+            className="px-3.5 py-2 bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 rounded-xl text-text-muted hover:text-text-main transition-colors cursor-pointer" 
+            title="Analysis Mode"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );

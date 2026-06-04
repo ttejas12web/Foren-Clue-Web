@@ -4,7 +4,7 @@
  */
 
 import { Suspense, lazy, useEffect, useState } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useParams, Navigate } from 'react-router-dom';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { ScrollToTop } from './components/layout/ScrollToTop';
@@ -39,6 +39,18 @@ function PageLoader() {
       <Loader2 size={40} className="animate-spin text-warning" />
     </div>
   );
+}
+
+function RootShareResolver() {
+  const { id } = useParams();
+  const reserved = [
+    'about', 'courses', 'cases', 'careers', 'community', 'services', 
+    'ebooks', 'contact', 'privacy', 'terms', 'profile', 'dashboard', 'login', 'admin'
+  ];
+  if (id && reserved.includes(id.toLowerCase())) {
+    return <Navigate to={`/${id}`} replace />;
+  }
+  return <Navigate to={`/ebooks?id=${id}`} replace />;
 }
 
 export default function App() {
@@ -101,6 +113,7 @@ export default function App() {
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/admin" element={<Admin />} />
+                    <Route path="/:id" element={<RootShareResolver />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Suspense>

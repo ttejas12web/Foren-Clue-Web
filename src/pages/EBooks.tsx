@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BookOpen, FileText, HelpCircle, Archive, Search, Download, ExternalLink, Eye, Upload } from 'lucide-react';
+import { BookOpen, FileText, HelpCircle, Archive, Search, Download, ExternalLink, Eye, Upload, Share2, Check } from 'lucide-react';
 import { SEO } from '@/components/layout/SEO';
 import { cn } from '@/lib/utils';
 import { db } from '@/lib/firebase';
@@ -67,6 +67,52 @@ export default function EBooks() {
     });
     return () => unsub();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const bookId = params.get('id');
+    if (!bookId) return;
+
+    if (dbEBooks.length > 0) {
+      const foundDynamic = dbEBooks.find((b) => String(b.id) === bookId);
+      if (foundDynamic) {
+        setSelectedPdfResource(foundDynamic);
+        if (foundDynamic.tabCategory) {
+          setActiveTab(foundDynamic.tabCategory);
+        }
+        return;
+      }
+    }
+
+    const allStatic = [
+      ...resources.books,
+      ...resources.notes,
+      ...resources.papers,
+      ...resources.other
+    ];
+    const foundStatic = allStatic.find((b) => String(b.id) === bookId);
+    if (foundStatic) {
+      setSelectedPdfResource(foundStatic);
+      const isBook = resources.books.some(b => String(b.id) === bookId);
+      const isNote = resources.notes.some(n => String(n.id) === bookId);
+      const isPaper = resources.papers.some(p => String(p.id) === bookId);
+      if (isBook) setActiveTab('books');
+      else if (isNote) setActiveTab('notes');
+      else if (isPaper) setActiveTab('papers');
+      else setActiveTab('other');
+    }
+  }, [dbEBooks]);
+
+  const handleCloseModal = () => {
+    setSelectedPdfResource(null);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('id');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    } catch (err) {
+      console.warn("Failed to rewrite navigation history context gracefully:", err);
+    }
+  };
 
   const mergedBooks = [
     ...dbEBooks.filter(item => item.tabCategory === 'books' || !item.tabCategory),
@@ -265,7 +311,7 @@ export default function EBooks() {
       <PdfViewerModal 
         isOpen={!!selectedPdfResource} 
         resource={selectedPdfResource || {}} 
-        onClose={() => setSelectedPdfResource(null)} 
+        onClose={handleCloseModal} 
       />
 
       <UploadResourceModal 
@@ -277,6 +323,38 @@ export default function EBooks() {
 }
 
 function ResourceCard({ item, icon: Icon, onView }: { item: any, icon: any, onView: (item: any) => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/${item.id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: item.title || 'ForenClue eLibrary',
+          text: `Read "${item.title || 'this study guide'}" on ForenClue.`,
+          url: shareUrl,
+        });
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          copyToClipboard(shareUrl);
+        }
+      }
+    } else {
+      copyToClipboard(shareUrl);
+    }
+  };
+
+  const copyToClipboard = (url: string) => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.warn("Clipboard access failed:", err);
+    });
+  };
+
   const handleDownload = async () => {
     if (item.pdfUrl) {
       if (item.pdfUrl.startsWith('localdb://')) {
@@ -433,6 +511,18 @@ function ResourceCard({ item, icon: Icon, onView }: { item: any, icon: any, onVi
           >
             <Download className="w-3.5 h-3.5" />
             Download
+          </button>
+          <button 
+            onClick={handleShare}
+            className={cn(
+              "px-3.5 py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 text-xs font-semibold uppercase",
+              copied 
+                ? "bg-emerald-500/15 text-emerald-500 border border-emerald-500/20" 
+                : "bg-black/5 dark:bg-white/10 hover:bg-black/10 dark:hover:bg-white/20 text-text-muted hover:text-text-main border border-transparent"
+            )}
+            title="Copy Share Link"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Share2 className="w-3.5 h-3.5" />}
           </button>
           <button 
             onClick={() => onView(item)}
